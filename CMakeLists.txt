@@ -20,6 +20,7 @@ add_executable(nullp0int src/main.cpp
         src/game/PlayerFactory.cpp
         src/game/WallFactory.h
         src/game/WallFactory.cpp
+        src/game/Game.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

@@ -5,13 +5,13 @@
 #ifndef NULLP0INT_REGISTRY_H
 #define NULLP0INT_REGISTRY_H
 
+#include <functional>
 #include <memory>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_map>
 #include <vector>
-#include <functional>
-#include <algorithm>
+
 
 #include "ComponentArray.h"
 #include "Entity.h"
@@ -83,8 +83,6 @@ namespace ecs
     std::unordered_map<std::type_index, std::shared_ptr<void>> m_components;
     std::unordered_map<std::type_index, std::function<void(Entity)>> m_componentRemovers;
   };
-
-
 }
 
 #endif //NULLP0INT_REGISTRY_H
