@@ -8,6 +8,7 @@
 #include <SFML/Window/Keyboard.hpp>
 
 #include "../../Components.h"
+#include "../../../constants.h"
 #include "../../../math/mathUtils.h"
 
 void ecs::InputSystem::update(Registry &registry)
@@ -47,8 +48,7 @@ void ecs::InputSystem::update(Registry &registry)
 
     sf::Vector2f dir = forward * moveForward + right * moveRight;
 
-    const float lenSq = dir.x * dir.x + dir.y * dir.y;
-    if (lenSq > 0.00000001f)
+    if (const float lenSq = dir.x * dir.x + dir.y * dir.y; lenSq > BIG_EPSILON)
     {
       const float len = std::sqrt(lenSq);
       dir.x /= len;

@@ -7,15 +7,17 @@
 
 #include <string>
 #include <SFML/Graphics/RenderWindow.hpp>
+
+#include "../constants.h"
 #include "../ecs/Registry.h"
 
 class Game
 {
 public:
-  explicit Game(unsigned windowW = 1920,
-                unsigned windowH = 1080,
+  explicit Game(unsigned windowW = SCREEN_WIDTH,
+                unsigned windowH = SCREEN_HEIGHT,
                 const std::string& title = "NULLP0INT",
-                unsigned antialiasing = 0);
+                unsigned antialiasing = 8);
 
   void run();
 

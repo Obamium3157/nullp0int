@@ -7,23 +7,70 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 
-#include <cmath>
-
 #include "../../Components.h"
 #include "../../Registry.h"
-#include "../../../math/mathUtils.h"
 
 void ecs::RenderSystem::render(Registry &registry, sf::RenderWindow &window)
 {
-  for (const auto &ents = registry.entities(); const auto &e : ents)
+  Entity mapEntity = INVALID_ENTITY;
+  for (const auto &e : registry.entities())
   {
-    if (registry.getComponent<PlayerTag>(e))
+    if (registry.hasComponent<TilemapComponent>(e))
     {
-      const auto* pos = registry.getComponent<PositionComponent>(e);
+      mapEntity = e;
+      break;
+    }
+  }
+
+  const TilemapComponent* map = nullptr;
+  if (mapEntity != INVALID_ENTITY)
+  {
+    map = registry.getComponent<TilemapComponent>(mapEntity);
+  }
+
+  if (map)
+  {
+    const float ts = map->tileScale;
+    for (unsigned y = 0; y < map->height; ++y)
+    {
+      for (unsigned x = 0; x < map->width; ++x)
+      {
+        if (map->isWall(static_cast<int>(x), static_cast<int>(y)))
+        {
+          sf::RectangleShape rect(sf::Vector2f(ts, ts));
+          rect.setPosition(static_cast<float>(x) * ts, static_cast<float>(y) * ts);
+          rect.setFillColor(sf::Color::White);
+          window.draw(rect);
+        }
+      }
+    }
+  }
+
+  for (const auto &e : registry.entities())
+  {
+    auto* pos = registry.getComponent<PositionComponent>(e);
+    if (!pos) continue;
+
+    if (registry.hasComponent<RayCastResultComponent>(e))
+    {
+      if (auto* rr = registry.getComponent<RayCastResultComponent>(e); rr && !rr->hits.empty())
+      {
+        sf::VertexArray va(sf::Lines);
+        for (const auto &hit : rr->hits)
+        {
+          va.append(sf::Vertex(pos->position, sf::Color::Yellow));
+          va.append(sf::Vertex(hit.hitPointWorld, sf::Color::Yellow));
+        }
+        window.draw(va);
+      }
+    }
+
+    if (registry.hasComponent<PlayerTag>(e))
+    {
       const auto* color = registry.getComponent<ColorComponent>(e);
       const auto* radius = registry.getComponent<RadiusComponent>(e);
       const auto* rotation = registry.getComponent<RotationComponent>(e);
-      if (!pos || !color || !radius || !rotation) continue;
+      if (!color || !radius || !rotation) continue;
 
       sf::CircleShape player(radius->radius);
       player.setOrigin(radius->radius, radius->radius);
@@ -32,58 +79,6 @@ void ecs::RenderSystem::render(Registry &registry, sf::RenderWindow &window)
       player.setFillColor(color->color);
 
       window.draw(player);
-
-      const     float    rad = radiansFromDegrees(rotation->angle);
-      constexpr float    len = 2000.f;
-      const sf::Vector2f dir { std::cos(rad), std::sin(rad) };
-      const sf::Vector2f start = pos->position;
-      const sf::Vector2f end   = start + dir * len;
-
-      sf::Vertex line[] =
-      {
-        sf::Vertex(start, sf::Color::Yellow),
-        sf::Vertex(end, sf::Color::Yellow),
-      };
-
-      window.draw(line, 2, sf::Lines);
-
-    }
-    else if (registry.getComponent<TilemapTag>(e))
-    {
-      const auto* tileStringVec = registry.getComponent<TilemapComponent>(e);
-      const auto* tileScale = registry.getComponent<TilemapComponent>(e);
-      if (!tileStringVec || !tileScale) continue;
-
-      unsigned y = 0;
-      for (const auto& tileString : tileStringVec->tiles)
-      {
-        unsigned x = 0;
-        for (const auto& ch : tileString)
-        {
-
-          switch (ch)
-          {
-            case '#':
-            {
-              sf::RectangleShape tile({tileScale->tileScale, tileScale->tileScale});
-              tile.setPosition({static_cast<float>(x) * tileScale->tileScale,
-                static_cast<float>(y) * tileScale->tileScale});
-              tile.setFillColor(sf::Color::White);
-
-              window.draw(tile);
-              break;
-            }
-            case ' ':
-            {
-              break;
-            }
-            default:
-              break;
-          }
-          x++;
-        }
-        y++;
-      }
     }
 
   }

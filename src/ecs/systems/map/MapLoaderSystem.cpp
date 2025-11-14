@@ -18,7 +18,7 @@ ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &fi
   if (!file.is_open())
   {
     std::cerr << "Failed to open the file: " << filename << std::endl;
-    return ecs::INVALID_ENTITY;
+    return INVALID_ENTITY;
   }
 
   std::cout << "found the file lol\n";
@@ -35,7 +35,7 @@ ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &fi
   if (strMap.empty())
   {
     std::cerr << "Map file is empty: " << filename << std::endl;
-    return ecs::INVALID_ENTITY;
+    return INVALID_ENTITY;
   }
 
   const Entity    mapEntity = registry.createEntity();
@@ -45,4 +45,15 @@ ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &fi
   registry.addComponent<TilemapTag>(mapEntity, TilemapTag{});
 
   return mapEntity;
+}
+
+sf::Vector2f ecs::getMapPosition(const sf::Vector2f position)
+{
+  return static_cast<sf::Vector2f>(static_cast<sf::Vector2i>(position));
+}
+
+bool ecs::insideMapIs(const TilemapComponent *map, const int x, const int y)
+{
+  if (!map) return false;
+  return x >= 0 && y >= 0 && x < static_cast<int>(map->width) && y < static_cast<int>(map->height);
 }

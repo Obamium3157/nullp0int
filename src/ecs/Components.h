@@ -83,6 +83,20 @@ namespace ecs
       return {static_cast<int>(worldPos.x / tileScale), static_cast<int>(worldPos.y / tileScale)};
     }
   };
+
+  struct RayHit
+  {
+    sf::Vector2f hitPointWorld;
+    float distance = 0.f;
+    int tileX = -1;
+    int tileY = -1;
+    float textureOffset = 0.f;
+  };
+
+  struct RayCastResultComponent
+  {
+    std::vector<RayHit> hits;
+  };
 }
 
 #endif //NULLP0INT_COMPONENTS_H

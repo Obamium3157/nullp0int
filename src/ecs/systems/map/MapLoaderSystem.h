@@ -5,18 +5,23 @@
 #ifndef NULLP0INT_MAPLOADERSYSTEM_H
 #define NULLP0INT_MAPLOADERSYSTEM_H
 #include <string>
+#include <SFML/System/Vector2.hpp>
 
+#include "../../Components.h"
 #include "../../Entity.h"
+#include "../../Registry.h"
 
 namespace ecs
 {
-  class Registry;
-
   class MapLoaderSystem
   {
   public:
     static Entity load(Registry& registry, const std::string& filename);
   };
+
+  sf::Vector2f getMapPosition(sf::Vector2f position);
+
+  bool insideMapIs(const TilemapComponent* map, int x, int y);
 }
 
 

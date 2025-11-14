@@ -28,6 +28,8 @@ add_executable(nullp0int src/main.cpp
         src/math/mathUtils.cpp
         src/ecs/systems/collision/CollisionSystem.h
         src/ecs/systems/collision/CollisionSystem.cpp
+        src/ecs/systems/render/RayCasting.h
+        src/ecs/systems/render/RayCasting.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)
