@@ -4,82 +4,81 @@
 
 #include "RenderSystem.h"
 
-#include <SFML/Graphics/CircleShape.hpp>
+#include <algorithm>
+#include <cmath>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/VertexArray.hpp>
 
 #include "../../Components.h"
 #include "../../Registry.h"
+#include "../../../constants.h"
+#include "../../../math/mathUtils.h"
 
 void ecs::RenderSystem::render(Registry &registry, sf::RenderWindow &window)
 {
-  Entity mapEntity = INVALID_ENTITY;
-  for (const auto &e : registry.entities())
-  {
-    if (registry.hasComponent<TilemapComponent>(e))
-    {
-      mapEntity = e;
-      break;
-    }
-  }
+  const sf::Color ceilingColor(4, 2, 115);
+  const sf::Color floorColor(50, 50, 50);
 
-  const TilemapComponent* map = nullptr;
-  if (mapEntity != INVALID_ENTITY)
-  {
-    map = registry.getComponent<TilemapComponent>(mapEntity);
-  }
+  sf::RectangleShape ceiling(sf::Vector2f(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT) / 2.f));
+  ceiling.setPosition(0.f, 0.f);
+  ceiling.setFillColor(ceilingColor);
+  window.draw(ceiling);
 
-  if (map)
-  {
-    const float ts = map->tileScale;
-    for (unsigned y = 0; y < map->height; ++y)
-    {
-      for (unsigned x = 0; x < map->width; ++x)
-      {
-        if (map->isWall(static_cast<int>(x), static_cast<int>(y)))
-        {
-          sf::RectangleShape rect(sf::Vector2f(ts, ts));
-          rect.setPosition(static_cast<float>(x) * ts, static_cast<float>(y) * ts);
-          rect.setFillColor(sf::Color::White);
-          window.draw(rect);
-        }
-      }
-    }
-  }
+  sf::RectangleShape floor(sf::Vector2f(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT) / 2.f));
+  floor.setPosition(0.f, static_cast<float>(SCREEN_HEIGHT) / 2.f);
+  floor.setFillColor(floorColor);
+  window.draw(floor);
 
   for (const auto &e : registry.entities())
   {
+    if (!registry.hasComponent<PositionComponent>(e)) continue;
+    if (!registry.hasComponent<RotationComponent>(e)) continue;
+
     auto* pos = registry.getComponent<PositionComponent>(e);
-    if (!pos) continue;
+    auto* rot = registry.getComponent<RotationComponent>(e);
+    if (!pos || !rot) continue;
 
-    if (registry.hasComponent<RayCastResultComponent>(e))
+    if (!registry.hasComponent<RayCastResultComponent>(e)) continue;
+    auto* rr = registry.getComponent<RayCastResultComponent>(e);
+    if (!rr || rr->hits.empty()) continue;
+
+    constexpr float halfScreenWidth = static_cast<float>(SCREEN_WIDTH) / 2.f;
+    const float     screenDist      = halfScreenWidth / std::tan(HALF_FOV);
+    constexpr float columnWidth     = static_cast<float>(SCREEN_WIDTH) / static_cast<float>(AMOUNT_OF_RAYS);
+    constexpr float tileSize        = TILE_SCALE;
+
+    const float ang = radiansFromDegrees(rot->angle);
+    float rayAngle = ang - HALF_FOV + RAY_ANGLE_OFFSET;
+
+    for (unsigned i = 0; i < rr->hits.size() && i < AMOUNT_OF_RAYS; ++i)
     {
-      if (auto* rr = registry.getComponent<RayCastResultComponent>(e); rr && !rr->hits.empty())
+      const RayHit &hit = rr->hits[i];
+
+      if (hit.distance <= 0.f || !std::isfinite(hit.distance))
       {
-        sf::VertexArray va(sf::Lines);
-        for (const auto &hit : rr->hits)
-        {
-          va.append(sf::Vertex(pos->position, sf::Color::Yellow));
-          va.append(sf::Vertex(hit.hitPointWorld, sf::Color::Yellow));
-        }
-        window.draw(va);
+        rayAngle += DELTA_ANGLE;
+        continue;
       }
+
+      const float correctedDepth = hit.distance * std::cos(ang - rayAngle);
+      const float projH = screenDist * tileSize / (correctedDepth + BIG_EPSILON);
+
+      const float h = std::min(projH, static_cast<float>(SCREEN_HEIGHT) * 2.f);
+
+      const float columnX = static_cast<float>(i) * columnWidth;
+      const float columnY = (static_cast<float>(SCREEN_HEIGHT) / 2.f) - (h / 2.f);
+
+
+      float     brightnessFactor = 1.f - std::min(correctedDepth / (tileSize * MAX_LINEAR_ATTENUATION_DISTANCE), 1.f);
+      uint8_t   col              = static_cast<uint8_t>(std::clamp(brightnessFactor * 255.f, 30.f, 255.f));
+      sf::Color wallColor(col, col, col);
+
+      sf::RectangleShape column(sf::Vector2f(std::ceil(columnWidth), h));
+      column.setPosition(columnX, columnY);
+      column.setFillColor(wallColor);
+      window.draw(column);
+
+      rayAngle += DELTA_ANGLE;
     }
-
-    if (registry.hasComponent<PlayerTag>(e))
-    {
-      const auto* color = registry.getComponent<ColorComponent>(e);
-      const auto* radius = registry.getComponent<RadiusComponent>(e);
-      const auto* rotation = registry.getComponent<RotationComponent>(e);
-      if (!color || !radius || !rotation) continue;
-
-      sf::CircleShape player(radius->radius);
-      player.setOrigin(radius->radius, radius->radius);
-      player.setPosition(pos->position);
-      player.setRotation(rotation->angle);
-      player.setFillColor(color->color);
-
-      window.draw(player);
-    }
-
   }
 }
