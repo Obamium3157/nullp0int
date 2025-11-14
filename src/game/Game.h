@@ -15,7 +15,7 @@ public:
   explicit Game(unsigned windowW = 1920,
                 unsigned windowH = 1080,
                 const std::string& title = "NULLP0INT",
-                unsigned antialiasing = 8);
+                unsigned antialiasing = 0);
 
   void run();
 
@@ -24,6 +24,7 @@ private:
   ecs::Registry m_registry;
 
   ecs::Entity m_player = ecs::INVALID_ENTITY;
+  ecs::Entity m_tilemap = ecs::INVALID_ENTITY;
 
   void init();
   void handleEvents();

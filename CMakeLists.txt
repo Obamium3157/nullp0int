@@ -26,6 +26,8 @@ add_executable(nullp0int src/main.cpp
         src/constants.h
         src/math/mathUtils.h
         src/math/mathUtils.cpp
+        src/ecs/systems/collision/CollisionSystem.h
+        src/ecs/systems/collision/CollisionSystem.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

@@ -6,6 +6,8 @@
 #define NULLP0INT_MAPLOADERSYSTEM_H
 #include <string>
 
+#include "../../Entity.h"
+
 namespace ecs
 {
   class Registry;
@@ -13,7 +15,7 @@ namespace ecs
   class MapLoaderSystem
   {
   public:
-    static void load(Registry& registry, const std::string& filename);
+    static Entity load(Registry& registry, const std::string& filename);
   };
 }
 

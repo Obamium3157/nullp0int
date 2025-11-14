@@ -12,7 +12,7 @@ namespace ecs
   class PhysicsSystem
   {
   public:
-    static void update(Registry& registry, float deltaTime);
+    static void update(Registry& registry, float deltaTime, Entity tilemapEntity);
   };
 }
 

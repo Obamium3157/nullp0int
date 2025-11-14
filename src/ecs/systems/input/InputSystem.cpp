@@ -4,7 +4,7 @@
 
 #include "InputSystem.h"
 
-#include <math.h>
+#include <cmath>
 #include <SFML/Window/Keyboard.hpp>
 
 #include "../../Components.h"

@@ -12,13 +12,13 @@
 #include "../../Registry.h"
 #include "../../../constants.h"
 
-void ecs::MapLoaderSystem::load(Registry &registry, const std::string &filename)
+ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &filename)
 {
   std::ifstream file(filename);
   if (!file.is_open())
   {
     std::cerr << "Failed to open the file: " << filename << std::endl;
-    return;
+    return ecs::INVALID_ENTITY;
   }
 
   std::cout << "found the file lol\n";
@@ -35,7 +35,7 @@ void ecs::MapLoaderSystem::load(Registry &registry, const std::string &filename)
   if (strMap.empty())
   {
     std::cerr << "Map file is empty: " << filename << std::endl;
-    return;
+    return ecs::INVALID_ENTITY;
   }
 
   const Entity    mapEntity = registry.createEntity();
@@ -43,4 +43,6 @@ void ecs::MapLoaderSystem::load(Registry &registry, const std::string &filename)
   const auto      height    = static_cast<unsigned>(strMap.size());
   registry.addComponent<TilemapComponent>(mapEntity, TilemapComponent{width, height, TILE_SCALE, strMap});
   registry.addComponent<TilemapTag>(mapEntity, TilemapTag{});
+
+  return mapEntity;
 }

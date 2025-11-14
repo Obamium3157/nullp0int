@@ -38,7 +38,7 @@ void Game::init()
 {
   m_player = initPlayer(m_registry, PLAYER_INITIAL_POSITION, PLAYER_RADIUS, PLAYER_SPEED, PLAYER_ROTATION_SPEED, PLAYER_COLOR);
 
-  ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
 
   // Здесь можно загрузить текстуры/шрифты и добавить render-компоненты и т.д.
 }
@@ -58,7 +58,7 @@ void Game::handleEvents()
 void Game::update(const float dt)
 {
   ecs::InputSystem::update(m_registry);
-  ecs::PhysicsSystem::update(m_registry, dt);
+  ecs::PhysicsSystem::update(m_registry, dt, m_tilemap);
 }
 
 void Game::render()
