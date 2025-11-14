@@ -8,8 +8,8 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
 
-#include "../ecs/Registry.h"
+#include "../../../ecs/Registry.h"
 
-ecs::Entity initPlayer(ecs::Registry &registry, sf::Vector2f initialPos, sf::Color color);
+ecs::Entity initPlayer(ecs::Registry &registry, sf::Vector2f initialPos, float radius, float speed, float rotationSpeed, sf::Color color);
 
 #endif //NULLP0INT_PLAYERFACTORY_H

@@ -10,17 +10,22 @@ find_package(SFML 2.6.2 COMPONENTS graphics window system REQUIRED PATHS "${SFML
 add_executable(nullp0int src/main.cpp
         src/ecs/Entity.h
         src/ecs/Components.h
-        src/ecs/Systems.h
-        src/ecs/Systems.cpp
         src/ecs/ComponentArray.h
         src/ecs/Registry.h
         src/game/Game.h
         src/ecs/Registry.cpp
-        src/game/PlayerFactory.h
-        src/game/PlayerFactory.cpp
-        src/game/WallFactory.h
-        src/game/WallFactory.cpp
+        src/game/entities/player/PlayerFactory.h
+        src/game/entities/player/PlayerFactory.cpp
         src/game/Game.cpp
+        src/ecs/systems/physics/PhysicsSystem.cpp
+        src/ecs/systems/render/RenderSystem.h
+        src/ecs/systems/render/RenderSystem.cpp
+        src/ecs/systems/input/InputSystem.cpp
+        src/ecs/systems/map/MapLoaderSystem.h
+        src/ecs/systems/map/MapLoaderSystem.cpp
+        src/constants.h
+        src/math/mathUtils.h
+        src/math/mathUtils.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

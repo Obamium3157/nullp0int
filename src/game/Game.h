@@ -7,14 +7,7 @@
 
 #include <string>
 #include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Window/Event.hpp>
-#include <SFML/Window/VideoMode.hpp>
-
-#include "PlayerFactory.h"
-#include "WallFactory.h"
-#include "../ecs/Components.h"
 #include "../ecs/Registry.h"
-#include "../ecs/Systems.h"
 
 class Game
 {
@@ -29,9 +22,6 @@ public:
 private:
   sf::RenderWindow m_window;
   ecs::Registry m_registry;
-
-  ecs::RenderSystem m_renderSystem;
-  ecs::PhysicsSystem m_physicsSystem;
 
   ecs::Entity m_player = ecs::INVALID_ENTITY;
 

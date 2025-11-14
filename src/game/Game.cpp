@@ -3,13 +3,21 @@
 //
 
 #include "Game.h"
+#include "entities/player/PlayerFactory.h"
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/VideoMode.hpp>
+
+#include "../constants.h"
+#include "../ecs/systems/render/RenderSystem.h"
+#include "../ecs/systems/physics/PhysicsSystem.h"
+#include "../ecs/systems/input/InputSystem.h"
+#include "../ecs/systems/map/MapLoaderSystem.h"
 
 Game::Game(const unsigned windowW, const unsigned windowH, const std::string &title, const unsigned antialiasing)
   : m_window(sf::VideoMode(windowW, windowH), title, sf::Style::Default,
              sf::ContextSettings{0, 0, antialiasing})
 {
   m_window.setFramerateLimit(60);
-
   init();
 }
 
@@ -28,12 +36,9 @@ void Game::run()
 
 void Game::init()
 {
-  m_player = initPlayer(m_registry, {100.f, 100.f}, sf::Color::Cyan);
+  m_player = initPlayer(m_registry, PLAYER_INITIAL_POSITION, PLAYER_RADIUS, PLAYER_SPEED, PLAYER_ROTATION_SPEED, PLAYER_COLOR);
 
-  for (int i = 0; i < 30; ++i)
-  {
-    initWall(m_registry, {50.f * i + 200.f, 300.f}, {25, 75}, sf::Color::Magenta);
-  }
+  ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
 
   // Здесь можно загрузить текстуры/шрифты и добавить render-компоненты и т.д.
 }
@@ -48,23 +53,11 @@ void Game::handleEvents()
       m_window.close();
     }
   }
-
-  if (m_player != ecs::INVALID_ENTITY)
-  {
-    if (auto* vel = m_registry.getComponent<ecs::VelocityComponent>(m_player))
-    {
-      constexpr float speed = 150.f;
-      vel->velocity = {};
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))  vel->velocity.x = -speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) vel->velocity.x = speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))    vel->velocity.y = -speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))  vel->velocity.y =  speed;
-    }
-  }
 }
 
 void Game::update(const float dt)
 {
+  ecs::InputSystem::update(m_registry);
   ecs::PhysicsSystem::update(m_registry, dt);
 }
 

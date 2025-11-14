@@ -8,10 +8,6 @@
 
 namespace ecs
 {
-
-  struct PlayerTag{};
-  struct WallTag{};
-
   using Entity = uint32_t;
   constexpr Entity INVALID_ENTITY = 0xFFFFFFFFu;
 }
