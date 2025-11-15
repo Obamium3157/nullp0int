@@ -13,13 +13,6 @@
 #include "../../../math/mathUtils.h"
 #include "../map/MapLoaderSystem.h"
 
-
-static bool inside_map_is(const ecs::TilemapComponent* map, const int x, const int y)
-{
-    if (!map) return false;
-    return x >= 0 && y >= 0 && x < static_cast<int>(map->width) && y < static_cast<int>(map->height);
-}
-
 ecs::Entity ecs::RayCasting::findTilemapEntity(const Registry &registry)
 {
     for (const auto &e : registry.entities())
@@ -58,7 +51,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
     result->hits.clear();
     result->hits.reserve(AMOUNT_OF_RAYS);
 
-
     float rayAngle = viewDirectionAngle - HALF_FOV + RAY_ANGLE_OFFSET;
 
     for (unsigned r = 0; r < AMOUNT_OF_RAYS; ++r)
@@ -67,7 +59,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
         const float cos_a = std::cos(rayAngle);
 
         float nearestHorizontalDist = std::numeric_limits<float>::infinity();
-        float horizontalHitWorldX = 0.f, horizontalHitWorldY = 0.f, horizontalTextureOffset = 0.f;
+        float horizontalHitWorldX = 0.f, horizontalHitWorldY = 0.f;
 
 
         if (std::abs(sin_a) > BIG_EPSILON)
@@ -85,12 +77,11 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
             {
                 const int tx = static_cast<int>(std::floor(x_h));
                 const int ty = static_cast<int>(std::floor(y));
-                if (!inside_map_is(map, tx, ty) || map->isWall(tx, ty))
+                if (!insideMapIs(map, tx, ty) || map->isWall(tx, ty))
                 {
                     nearestHorizontalDist = distToNextHorizontal;
                     horizontalHitWorldX = x_h;
                     horizontalHitWorldY = y;
-                    horizontalTextureOffset = horizontalHitWorldX - std::floor(horizontalHitWorldX);
                     break;
                 }
                 x_h += horizontalXStep;
@@ -100,7 +91,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
         }
 
         float nearestVerticalDist = std::numeric_limits<float>::infinity();
-        float verticalHitWorldX = 0.f, verticalHitWorldY = 0.f, verticalTextureOffset = 0.f;
+        float verticalHitWorldX = 0.f, verticalHitWorldY = 0.f;
 
         if (std::abs(cos_a) > BIG_EPSILON)
         {
@@ -117,12 +108,11 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
             {
                 const int tx = static_cast<int>(std::floor(x));
                 const int ty = static_cast<int>(std::floor(y_v));
-                if (!inside_map_is(map, tx, ty) || map->isWall(tx, ty))
+                if (!insideMapIs(map, tx, ty) || map->isWall(tx, ty))
                 {
                     nearestVerticalDist = distToNextVertical;
                     verticalHitWorldX = x;
                     verticalHitWorldY = y_v;
-                    verticalTextureOffset = verticalHitWorldY - std::floor(verticalHitWorldY);
                     break;
                 }
                 x += dx;
@@ -135,7 +125,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
         float chosenHitTileX;
         float chosenHitTileY;
         int chosenHitTileIndexX = -1, chosenHitTileIndexY = -1;
-        float chosenTextureOffset = 0.f;
 
         if (nearestHorizontalDist < nearestVerticalDist)
         {
@@ -144,7 +133,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
             chosenHitTileY = horizontalHitWorldY;
             chosenHitTileIndexX = static_cast<int>(std::floor(horizontalHitWorldX));
             chosenHitTileIndexY = static_cast<int>(std::floor(horizontalHitWorldY));
-            chosenTextureOffset = horizontalTextureOffset;
         }
         else
         {
@@ -153,7 +141,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
             chosenHitTileY = verticalHitWorldY;
             chosenHitTileIndexX = static_cast<int>(std::floor(verticalHitWorldX));
             chosenHitTileIndexY = static_cast<int>(std::floor(verticalHitWorldY));
-            chosenTextureOffset = verticalTextureOffset;
         }
 
         const float depthWorld = depthTiles * tileSize;
@@ -164,7 +151,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
         hit.distance = depthWorld;
         hit.tileX = chosenHitTileIndexX;
         hit.tileY = chosenHitTileIndexY;
-        hit.textureOffset = chosenTextureOffset;
 
         result->hits.push_back(hit);
 

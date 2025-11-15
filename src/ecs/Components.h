@@ -91,7 +91,6 @@ namespace ecs
     float distance = 0.f;
     int tileX = -1;
     int tileY = -1;
-    float textureOffset = 0.f;
   };
 
   struct RayCastResultComponent
