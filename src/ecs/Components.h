@@ -28,6 +28,7 @@ namespace ecs
   struct VelocityComponent
   {
     sf::Vector2f velocity{};
+    float velocityMultiplier = 1.f;
   };
   struct RotationVelocityComponent
   {

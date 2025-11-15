@@ -39,7 +39,7 @@ void Game::init()
 {
   m_player = initPlayer(m_registry, PLAYER_INITIAL_POSITION, PLAYER_RADIUS, PLAYER_SPEED, PLAYER_ROTATION_SPEED, PLAYER_COLOR);
 
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map2.txt");
 
   // Здесь можно загрузить текстуры/шрифты и добавить render-компоненты и т.д.
 }

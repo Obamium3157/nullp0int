@@ -53,11 +53,13 @@ void ecs::InputSystem::update(Registry &registry)
       const float len = std::sqrt(lenSq);
       dir.x /= len;
       dir.y /= len;
-      velocityComp->velocity = dir * moveSpeed;
+      velocityComp->velocity = dir * moveSpeed * velocityComp->velocityMultiplier;
     }
     else
     {
       velocityComp->velocity = {};
     }
+
+    velocityComp->velocityMultiplier = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? PLAYER_VELOCITY_MULTIPLIER : 1.f;
   }
 }

@@ -17,7 +17,7 @@ public:
   explicit Game(unsigned windowW = SCREEN_WIDTH,
                 unsigned windowH = SCREEN_HEIGHT,
                 const std::string& title = "NULLP0INT",
-                unsigned antialiasing = 8);
+                unsigned antialiasing = 0);
 
   void run();
 
