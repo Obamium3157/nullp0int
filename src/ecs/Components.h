@@ -67,7 +67,7 @@ namespace ecs
     unsigned width = 0;
     unsigned height = 0;
 
-    float tileScale = 64.f;
+    float tileSize = 64.f;
 
     std::vector<std::string> tiles;
 
@@ -81,7 +81,7 @@ namespace ecs
 
     [[nodiscard]] sf::Vector2i worldToTile(const sf::Vector2f worldPos) const
     {
-      return {static_cast<int>(worldPos.x / tileScale), static_cast<int>(worldPos.y / tileScale)};
+      return {static_cast<int>(worldPos.x / tileSize), static_cast<int>(worldPos.y / tileSize)};
     }
   };
 

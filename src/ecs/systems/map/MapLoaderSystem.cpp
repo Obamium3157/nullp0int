@@ -21,8 +21,6 @@ ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &fi
     return INVALID_ENTITY;
   }
 
-  std::cout << "found the file lol\n";
-
   std::string line;
   std::vector<std::string> strMap;
   while (std::getline(file, line))

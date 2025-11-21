@@ -15,7 +15,7 @@
 #include "../ecs/systems/render/RayCasting.h"
 
 Game::Game(const unsigned windowW, const unsigned windowH, const std::string &title, const unsigned antialiasing)
-  : m_window(sf::VideoMode(windowW, windowH), title, sf::Style::Default,
+  : m_window(sf::VideoMode(windowW, windowH), title, sf::Style::Fullscreen,
              sf::ContextSettings{0, 0, antialiasing})
 {
   m_window.setFramerateLimit(60);
@@ -39,7 +39,7 @@ void Game::init()
 {
   m_player = initPlayer(m_registry, PLAYER_INITIAL_POSITION, PLAYER_RADIUS, PLAYER_SPEED, PLAYER_ROTATION_SPEED, PLAYER_COLOR);
 
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map2.txt");
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
 
   // Здесь можно загрузить текстуры/шрифты и добавить render-компоненты и т.д.
 }

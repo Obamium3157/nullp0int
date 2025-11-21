@@ -15,11 +15,11 @@ constexpr float    PLAYER_VELOCITY_MULTIPLIER = 4.f;
 constexpr float    PLAYER_ROTATION_SPEED      = 120.f;
 const sf::Color    PLAYER_COLOR               = sf::Color::Cyan;
 
-constexpr float    FOV                             = static_cast<float>(M_PI) / 2.5;
+constexpr float    FOV                             = static_cast<float>(M_PI) / 2;
 constexpr float    HALF_FOV                        = FOV / 2;
 constexpr float    RAY_ANGLE_OFFSET                = 0.0001f;
 constexpr float    BIG_EPSILON                     = 1e-6f;
-constexpr unsigned AMOUNT_OF_RAYS                  = 500; //SCREEN_WIDTH / 2;
+constexpr unsigned AMOUNT_OF_RAYS                  = 500;
 constexpr unsigned HALF_AMOUNT_OF_RAYS             = AMOUNT_OF_RAYS / 2;
 constexpr float    DELTA_ANGLE                     = FOV / AMOUNT_OF_RAYS;
 constexpr unsigned MAX_DEPTH                       = 100;

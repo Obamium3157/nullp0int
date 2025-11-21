@@ -25,10 +25,10 @@ ecs::Entity ecs::RayCasting::findTilemapEntity(const Registry &registry)
     return INVALID_ENTITY;
 }
 
-void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
+void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
 {
-    auto* posComp = registry.getComponent<PositionComponent>(player);
-    auto* rotComp = registry.getComponent<RotationComponent>(player);
+    const auto* posComp = registry.getComponent<PositionComponent>(player);
+    const auto* rotComp = registry.getComponent<RotationComponent>(player);
     if (!posComp || !rotComp) return;
 
     const Entity mapEntity = findTilemapEntity(registry);
@@ -36,7 +36,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
     const auto* map = registry.getComponent<TilemapComponent>(mapEntity);
     if (!map) return;
 
-    const float tileSize = map->tileScale;
+    const float tileSize = map->tileSize;
     const sf::Vector2f playerWorldPos = posComp->position;
     const sf::Vector2f playerTilePos{ playerWorldPos.x / tileSize, playerWorldPos.y / tileSize };
 
@@ -60,7 +60,6 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
 
         float nearestHorizontalDist = std::numeric_limits<float>::infinity();
         float horizontalHitWorldX = 0.f, horizontalHitWorldY = 0.f;
-
 
         if (std::abs(sin_a) > BIG_EPSILON)
         {
@@ -124,7 +123,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Entity &player)
         float depthTiles;
         float chosenHitTileX;
         float chosenHitTileY;
-        int chosenHitTileIndexX = -1, chosenHitTileIndexY = -1;
+        int chosenHitTileIndexX, chosenHitTileIndexY;
 
         if (nearestHorizontalDist < nearestVerticalDist)
         {

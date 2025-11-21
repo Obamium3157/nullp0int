@@ -12,7 +12,7 @@ namespace ecs
   class RayCasting
   {
   public:
-    static void rayCast(Registry& registry, Entity& player);
+    static void rayCast(Registry& registry, const Entity& player);
 
   private:
     static Entity findTilemapEntity(const Registry& registry);

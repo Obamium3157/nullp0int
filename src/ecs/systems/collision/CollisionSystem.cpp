@@ -14,7 +14,7 @@ bool ecs::CollisionSystem::checkWallCollision(Registry &registry, const sf::Vect
 
   const float cx = position.x;
   const float cy = position.y;
-  const float ts = map->tileScale;
+  const float ts = map->tileSize;
 
   const int minTileX = static_cast<int>(std::floor((cx - radius) / ts));
   const int maxTileX = static_cast<int>(std::ceil((cx + radius) / ts));
