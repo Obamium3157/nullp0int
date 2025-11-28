@@ -6,8 +6,9 @@
 
 #include "../../Components.h"
 #include "../collision/CollisionSystem.h"
+#include <cmath>
 
-void ecs::PhysicsSystem::update(Registry &registry, const float deltaTime, const Entity tilemapEntity)
+void ecs::PhysicsSystem::update(Registry& registry, const float deltaTime, const Entity& m_tilemap)
 {
   for (const auto &ents = registry.entities(); const auto &e : ents)
   {
@@ -24,7 +25,7 @@ void ecs::PhysicsSystem::update(Registry &registry, const float deltaTime, const
     const sf::Vector2f desiredPos = currentPos + velocity * deltaTime;
 
     if (const sf::Vector2f tryPosX{ desiredPos.x, currentPos.y };
-      !CollisionSystem::checkWallCollision(registry, tryPosX, radius, tilemapEntity))
+      !CollisionSystem::checkWallCollision(registry, tryPosX, radius, m_tilemap))
     {
       positionComp->position.x = tryPosX.x;
     }
@@ -34,7 +35,7 @@ void ecs::PhysicsSystem::update(Registry &registry, const float deltaTime, const
     }
 
     if (const sf::Vector2f tryPosY{positionComp->position.x, desiredPos.y};
-      !CollisionSystem::checkWallCollision(registry, tryPosY, radius, tilemapEntity))
+      !CollisionSystem::checkWallCollision(registry, tryPosY, radius, m_tilemap))
     {
       positionComp->position.y = tryPosY.y;
     }

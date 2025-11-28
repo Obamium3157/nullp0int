@@ -11,7 +11,7 @@
 #include "../../../constants.h"
 #include "../../../math/mathUtils.h"
 
-void ecs::InputSystem::update(Registry &registry)
+void ecs::InputSystem::update(Registry &registry, const Configuration &config)
 {
   for (const auto &ents = registry.entities(); const auto &e: ents)
   {
@@ -59,7 +59,6 @@ void ecs::InputSystem::update(Registry &registry)
     {
       velocityComp->velocity = {};
     }
-
-    velocityComp->velocityMultiplier = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? PLAYER_VELOCITY_MULTIPLIER : 1.f;
+    velocityComp->velocityMultiplier = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? config.player_velocity_multiplier : 1.f;
   }
 }

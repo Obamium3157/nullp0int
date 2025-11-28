@@ -6,13 +6,14 @@
 #define NULLP0INT_RAYCASTING_H
 
 #include "../../Registry.h"
+#include "../../../configuration/Configuration.h"
 
 namespace ecs
 {
   class RayCasting
   {
   public:
-    static void rayCast(Registry& registry, const Entity& player);
+    static void rayCast(Registry& registry, Configuration config, const Entity& player);
 
   private:
     static Entity findTilemapEntity(const Registry& registry);

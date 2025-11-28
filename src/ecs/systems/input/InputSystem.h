@@ -5,6 +5,7 @@
 #ifndef NULLP0INT_INPUTSYSTEM_H
 #define NULLP0INT_INPUTSYSTEM_H
 #include "../../Registry.h"
+#include "../../../configuration/Configuration.h"
 
 
 namespace ecs
@@ -12,7 +13,7 @@ namespace ecs
   class InputSystem
   {
   public:
-    static void update(Registry& registry);
+    static void update(Registry& registry, const Configuration &config);
   };
 }
 

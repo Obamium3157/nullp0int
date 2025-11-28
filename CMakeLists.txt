@@ -30,6 +30,13 @@ add_executable(nullp0int src/main.cpp
         src/ecs/systems/collision/CollisionSystem.cpp
         src/ecs/systems/render/RayCasting.h
         src/ecs/systems/render/RayCasting.cpp
+        src/ecs/systems/render/Animation.h
+        src/ecs/systems/render/TextureManager.h
+        src/ecs/systems/render/TextureManager.cpp
+        src/ecs/systems/render/AnimationSystem.h
+        src/ecs/systems/render/AnimationSystem.cpp
+        src/ecs/systems/menu/MenuNavigationSystem.h
+        src/configuration/Configuration.h
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

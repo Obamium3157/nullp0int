@@ -3,22 +3,27 @@
 //
 
 #include "Game.h"
-#include "entities/player/PlayerFactory.h"
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/VideoMode.hpp>
+#include "entities/player/PlayerFactory.h"
 
-#include "../constants.h"
-#include "../ecs/systems/render/RenderSystem.h"
-#include "../ecs/systems/physics/PhysicsSystem.h"
 #include "../ecs/systems/input/InputSystem.h"
 #include "../ecs/systems/map/MapLoaderSystem.h"
+#include "../ecs/systems/physics/PhysicsSystem.h"
+#include "../ecs/systems/render/AnimationSystem.h"
 #include "../ecs/systems/render/RayCasting.h"
+#include "../ecs/systems/render/RenderSystem.h"
+#include "../ecs/systems/render/TextureManager.h"
 
 Game::Game(const unsigned windowW, const unsigned windowH, const std::string &title, const unsigned antialiasing)
-  : m_window(sf::VideoMode(windowW, windowH), title, sf::Style::Fullscreen,
-             sf::ContextSettings{0, 0, antialiasing})
+  : m_window(sf::VideoMode(windowW, windowH),    title,
+    sf::Style::Default,
+    sf::ContextSettings{ 0, 0, antialiasing }
+  )
 {
-  m_window.setFramerateLimit(60);
+  m_window.setFramerateLimit(
+    60
+  );
   init();
 }
 
@@ -37,11 +42,27 @@ void Game::run()
 
 void Game::init()
 {
-  m_player = initPlayer(m_registry, PLAYER_INITIAL_POSITION, PLAYER_RADIUS, PLAYER_SPEED, PLAYER_ROTATION_SPEED, PLAYER_COLOR);
+  const auto player_initial_position = m_config.player_initial_position;
+  const auto player_radius = m_config.player_radius;
+  const auto player_speed = m_config.player_speed;
+  const auto player_rotation_speed = m_config.player_rotation_speed;
 
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, "resources/maps/map1.txt");
+  m_player = initPlayer(m_registry, player_initial_position, player_radius, player_speed, player_rotation_speed);
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/map1.txt");
 
-  // Здесь можно загрузить текстуры/шрифты и добавить render-компоненты и т.д.
+  m_textureManager.load("wall_texture", "resources/assets/DOOR2_4.png");
+  m_textureManager.load("floor", "resources/assets/FLAT5_8.png");
+  m_textureManager.load("step1", "resources/assets/STEP1.png");
+  m_textureManager.load("step2", "resources/assets/STEP2.png");
+  m_textureManager.load("sinner", "resources/assets/WALL50_1.png");
+
+  if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
+  {
+    tm->tileAppearanceMap['#'] = {"wall_texture", {}};
+    tm->tileAppearanceMap['P'] = {"step1", {"step1", "step2"}, 0.5f};
+    tm->tileAppearanceMap['S'] = {"sinner", {}};
+    tm->floorTextureId = "floor";
+  }
 }
 
 void Game::handleEvents()
@@ -58,15 +79,17 @@ void Game::handleEvents()
 
 void Game::update(const float dt)
 {
-  ecs::InputSystem::update(m_registry);
+  ecs::InputSystem::update(m_registry, m_config);
+  ecs::AnimationSystem::update(m_registry, dt);
   ecs::PhysicsSystem::update(m_registry, dt, m_tilemap);
-  ecs::RayCasting::rayCast(m_registry, m_player);
+  ecs::RayCasting::rayCast(m_registry, m_config, m_player);
 }
 
 void Game::render()
 {
+  const float globalTime = m_globalTimer.getElapsedTime().asSeconds();
   m_window.clear(sf::Color::Black);
-  ecs::RenderSystem::render(m_registry, m_window);
+  ecs::RenderSystem::render(m_registry, m_config, m_window, m_tilemap, globalTime, m_textureManager);
   m_window.display();
 }
 

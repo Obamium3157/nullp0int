@@ -7,7 +7,12 @@
 #ifndef NULLP0INT_COMPONENTS_H
 #define NULLP0INT_COMPONENTS_H
 
+#include <cmath>
+#include <memory>
+#include <unordered_map>
 #include <SFML/Graphics/RenderWindow.hpp>
+
+#include "systems/render/Animation.h"
 
 namespace ecs
 {
@@ -62,21 +67,42 @@ namespace ecs
 
 
   struct TilemapTag{};
+
+  struct TileAppearance
+  {
+    std::string singleTextureId{};
+    std::vector<std::string> frames;
+    float frameTime = 0.1f;
+    float lastUpdateTime = 0.f;
+
+    [[nodiscard]] bool isAnimated() const { return !frames.empty(); }
+    [[nodiscard]] const std::string& currentTextureId(const float currentTime) const
+    {
+      if (!isAnimated()) return singleTextureId;
+      if (frameTime <= 0.f) return frames.front();
+
+      const float localTime = currentTime - lastUpdateTime;
+      const size_t idx = static_cast<size_t>(std::floor(localTime / frameTime)) % frames.size();
+      return frames[idx];
+    }
+  };
+
   struct TilemapComponent
   {
     unsigned width = 0;
     unsigned height = 0;
-
     float tileSize = 64.f;
-
     std::vector<std::string> tiles;
+    std::string floorTextureId;
+
+    std::unordered_map<char, TileAppearance> tileAppearanceMap;
 
     [[nodiscard]] bool isWall(const int tx, const int ty) const
     {
       if (tx < 0 || ty < 0 || tx >= static_cast<int>(width) || ty >= static_cast<int>(height))
         return true;
 
-      return tiles[ty][tx] == '#';
+      return tiles[ty][tx] != ' ';
     }
 
     [[nodiscard]] sf::Vector2i worldToTile(const sf::Vector2f worldPos) const
@@ -91,11 +117,30 @@ namespace ecs
     float distance = 0.f;
     int tileX = -1;
     int tileY = -1;
+    bool vertical = false;
   };
 
   struct RayCastResultComponent
   {
     std::vector<RayHit> hits;
+  };
+
+
+  struct SpriteComponent
+  {
+    std::string textureId;
+    std::vector<sf::IntRect> frames;
+    float frameTime = 0.1f;
+    bool playing = true;
+    bool loop = true;
+    std::size_t currentFrame = 0;
+    float frameAccumulator = 0.f;
+  };
+
+
+  struct AnimationComponent
+  {
+    std::vector<std::shared_ptr<Animation>> activeAnimations;
   };
 }
 

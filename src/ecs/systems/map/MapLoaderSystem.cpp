@@ -11,8 +11,9 @@
 #include "../../Components.h"
 #include "../../Registry.h"
 #include "../../../constants.h"
+#include "../../../configuration/Configuration.h"
 
-ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &filename)
+ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, Configuration config, const std::string &filename)
 {
   std::ifstream file(filename);
   if (!file.is_open())
@@ -39,7 +40,7 @@ ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const std::string &fi
   const Entity    mapEntity = registry.createEntity();
   const auto      width     = static_cast<unsigned>(strMap[0].length());
   const auto      height    = static_cast<unsigned>(strMap.size());
-  registry.addComponent<TilemapComponent>(mapEntity, TilemapComponent{width, height, TILE_SCALE, strMap});
+  registry.addComponent<TilemapComponent>(mapEntity, TilemapComponent{width, height, config.tile_size, strMap});
   registry.addComponent<TilemapTag>(mapEntity, TilemapTag{});
 
   return mapEntity;

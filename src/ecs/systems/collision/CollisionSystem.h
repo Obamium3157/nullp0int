@@ -7,6 +7,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include "../../Registry.h"
+#include "../../../configuration/Configuration.h"
 
 namespace ecs
 {

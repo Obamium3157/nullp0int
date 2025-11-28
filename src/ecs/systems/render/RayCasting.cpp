@@ -25,7 +25,7 @@ ecs::Entity ecs::RayCasting::findTilemapEntity(const Registry &registry)
     return INVALID_ENTITY;
 }
 
-void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
+void ecs::RayCasting::rayCast(Registry &registry, Configuration config, const Entity &player)
 {
     const auto* posComp = registry.getComponent<PositionComponent>(player);
     const auto* rotComp = registry.getComponent<RotationComponent>(player);
@@ -35,6 +35,12 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
     if (mapEntity == INVALID_ENTITY) return;
     const auto* map = registry.getComponent<TilemapComponent>(mapEntity);
     if (!map) return;
+
+    const auto amount_of_rays = static_cast<unsigned>(config.resolution_option);
+    const auto fov = config.fov;
+    const auto half_fov = fov / 2.f;
+    const auto max_depth = config.render_distance;
+    const auto delta_angle = fov / static_cast<float>(amount_of_rays);
 
     const float tileSize = map->tileSize;
     const sf::Vector2f playerWorldPos = posComp->position;
@@ -49,11 +55,11 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
 
     auto* result = registry.getComponent<RayCastResultComponent>(player);
     result->hits.clear();
-    result->hits.reserve(AMOUNT_OF_RAYS);
+    result->hits.reserve(amount_of_rays);
 
-    float rayAngle = viewDirectionAngle - HALF_FOV + RAY_ANGLE_OFFSET;
+    float rayAngle = viewDirectionAngle - half_fov + RAY_ANGLE_OFFSET;
 
-    for (unsigned r = 0; r < AMOUNT_OF_RAYS; ++r)
+    for (unsigned r = 0; r < amount_of_rays; ++r)
     {
         const float sin_a = std::sin(rayAngle);
         const float cos_a = std::cos(rayAngle);
@@ -72,7 +78,7 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
             const float horizontalDistStep = dy / sin_a;
             const float horizontalXStep = horizontalDistStep * cos_a;
 
-            for (unsigned i = 0; i < MAX_DEPTH; ++i)
+            for (unsigned i = 0; i < max_depth; ++i)
             {
                 const int tx = static_cast<int>(std::floor(x_h));
                 const int ty = static_cast<int>(std::floor(y));
@@ -103,7 +109,7 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
             const float verticalDistStep = dx / cos_a;
             const float verticalYStep = verticalDistStep * sin_a;
 
-            for (unsigned i = 0; i < MAX_DEPTH; ++i)
+            for (unsigned i = 0; i < max_depth; ++i)
             {
                 const int tx = static_cast<int>(std::floor(x));
                 const int ty = static_cast<int>(std::floor(y_v));
@@ -124,9 +130,11 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
         float chosenHitTileX;
         float chosenHitTileY;
         int chosenHitTileIndexX, chosenHitTileIndexY;
+        bool chosenVertical;
 
         if (nearestHorizontalDist < nearestVerticalDist)
         {
+            chosenVertical = false;
             depthTiles = nearestHorizontalDist;
             chosenHitTileX = horizontalHitWorldX;
             chosenHitTileY = horizontalHitWorldY;
@@ -135,6 +143,7 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
         }
         else
         {
+            chosenVertical = true;
             depthTiles = nearestVerticalDist;
             chosenHitTileX = verticalHitWorldX;
             chosenHitTileY = verticalHitWorldY;
@@ -150,9 +159,10 @@ void ecs::RayCasting::rayCast(Registry &registry, const Entity &player)
         hit.distance = depthWorld;
         hit.tileX = chosenHitTileIndexX;
         hit.tileY = chosenHitTileIndexY;
+        hit.vertical = chosenVertical;
 
         result->hits.push_back(hit);
 
-        rayAngle += DELTA_ANGLE;
+        rayAngle += delta_angle;
     }
 }

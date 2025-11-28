@@ -9,7 +9,9 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include "../constants.h"
+#include "../configuration/Configuration.h"
 #include "../ecs/Registry.h"
+#include "../ecs/systems/render/TextureManager.h"
 
 class Game
 {
@@ -24,9 +26,14 @@ public:
 private:
   sf::RenderWindow m_window;
   ecs::Registry m_registry;
+  TextureManager m_textureManager;
+
+  Configuration m_config;
 
   ecs::Entity m_player = ecs::INVALID_ENTITY;
   ecs::Entity m_tilemap = ecs::INVALID_ENTITY;
+
+  sf::Clock m_globalTimer;
 
   void init();
   void handleEvents();

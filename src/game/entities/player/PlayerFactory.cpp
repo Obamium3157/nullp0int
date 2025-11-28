@@ -6,7 +6,7 @@
 
 #include "../../../ecs/Components.h"
 
-ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, const float radius, const float speed, const float rotationSpeed, const sf::Color color)
+ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, const float radius, const float speed, const float rotationSpeed)
 {
   const ecs::Entity player = registry.createEntity();
   registry.addComponent<ecs::PositionComponent>(player, ecs::PositionComponent{initialPos});
@@ -16,7 +16,6 @@ ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, c
   registry.addComponent<ecs::RotationVelocityComponent>(player, ecs::RotationVelocityComponent{});
   registry.addComponent<ecs::SpeedComponent>(player, ecs::SpeedComponent{speed});
   registry.addComponent<ecs::RotationSpeedComponent>(player, ecs::RotationSpeedComponent{rotationSpeed});
-  registry.addComponent<ecs::ColorComponent>(player, ecs::ColorComponent{color});
   registry.addComponent<ecs::PlayerTag>(player, ecs::PlayerTag{});
   registry.addComponent<ecs::PlayerInput>(player, ecs::PlayerInput{});
 

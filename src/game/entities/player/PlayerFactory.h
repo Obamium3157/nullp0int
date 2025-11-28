@@ -10,6 +10,6 @@
 
 #include "../../../ecs/Registry.h"
 
-ecs::Entity initPlayer(ecs::Registry &registry, sf::Vector2f initialPos, float radius, float speed, float rotationSpeed, sf::Color color);
+ecs::Entity initPlayer(ecs::Registry &registry, sf::Vector2f initialPos, float radius, float speed, float rotationSpeed);
 
 #endif //NULLP0INT_PLAYERFACTORY_H
