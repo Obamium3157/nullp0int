@@ -4,9 +4,7 @@
 
 #ifndef NULLP0INT_CONFIGURATION_H
 #define NULLP0INT_CONFIGURATION_H
-#include <string>
-#include <unordered_map>
-#include <variant>
+
 #include <SFML/System/Vector2.hpp>
 
 #include "../math/mathUtils.h"
@@ -28,7 +26,7 @@ struct Configuration
   float player_rotation_speed = 120.f;
   float fov = radiansFromDegrees(90);
   float resolution_option = ResolutionOption::HIGH;
-  unsigned render_distance = 100u;
+  unsigned render_distance = 1000u;
   float attenuation_distance = 16.f;
   bool enable_fish_eye = false;
   float tile_size = 64.f;

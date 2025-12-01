@@ -100,9 +100,32 @@ namespace ecs
     [[nodiscard]] bool isWall(const int tx, const int ty) const
     {
       if (tx < 0 || ty < 0 || tx >= static_cast<int>(width) || ty >= static_cast<int>(height))
-        return true;
+        return false;
 
-      return tiles[ty][tx] != ' ';
+      return tiles[ty][tx] != ' ' && tiles[ty][tx] != '*';
+    }
+
+    [[nodiscard]] sf::Vector2f getSpawnPosition() const
+    {
+      for (unsigned ty = 0; ty < height; ++ty)
+      {
+        const std::string& row = tiles[ty];
+        for (unsigned tx = 0; tx < width && tx < row.size(); ++tx)
+        {
+          if (row[tx] == '*')
+          {
+            return sf::Vector2f{
+              static_cast<float>(tx) * tileSize + tileSize / 2.f,
+              static_cast<float>(ty) * tileSize + tileSize / 2.f
+            };
+          }
+        }
+      }
+
+      return sf::Vector2f{
+        static_cast<float>(width) * tileSize / 2.f,
+        static_cast<float>(height) * tileSize / 2.f
+      };
     }
 
     [[nodiscard]] sf::Vector2i worldToTile(const sf::Vector2f worldPos) const
@@ -135,12 +158,6 @@ namespace ecs
     bool loop = true;
     std::size_t currentFrame = 0;
     float frameAccumulator = 0.f;
-  };
-
-
-  struct AnimationComponent
-  {
-    std::vector<std::shared_ptr<Animation>> activeAnimations;
   };
 }
 

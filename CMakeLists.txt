@@ -35,8 +35,10 @@ add_executable(nullp0int src/main.cpp
         src/ecs/systems/render/TextureManager.cpp
         src/ecs/systems/render/AnimationSystem.h
         src/ecs/systems/render/AnimationSystem.cpp
-        src/ecs/systems/menu/MenuNavigationSystem.h
         src/configuration/Configuration.h
+        src/ecs/systems/map_generation/MapGenerationSystem.h
+        src/ecs/systems/map_generation/MapGenerationSystem.cpp
+        src/ecs/systems/map_generation/roomPresets.h
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

@@ -9,6 +9,7 @@
 
 #include "../ecs/systems/input/InputSystem.h"
 #include "../ecs/systems/map/MapLoaderSystem.h"
+#include "../ecs/systems/map_generation/MapGenerationSystem.h"
 #include "../ecs/systems/physics/PhysicsSystem.h"
 #include "../ecs/systems/render/AnimationSystem.h"
 #include "../ecs/systems/render/RayCasting.h"
@@ -21,9 +22,7 @@ Game::Game(const unsigned windowW, const unsigned windowH, const std::string &ti
     sf::ContextSettings{ 0, 0, antialiasing }
   )
 {
-  m_window.setFramerateLimit(
-    60
-  );
+  m_window.setFramerateLimit(60);
   init();
 }
 
@@ -42,27 +41,39 @@ void Game::run()
 
 void Game::init()
 {
-  const auto player_initial_position = m_config.player_initial_position;
+  MapGenerationSystem mgs{40, 40, 1337};
+  const std::string filename = mgs.generateLevel(20);
+
   const auto player_radius = m_config.player_radius;
   const auto player_speed = m_config.player_speed;
   const auto player_rotation_speed = m_config.player_rotation_speed;
-
-  m_player = initPlayer(m_registry, player_initial_position, player_radius, player_speed, player_rotation_speed);
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/map1.txt");
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
 
   m_textureManager.load("wall_texture", "resources/assets/DOOR2_4.png");
   m_textureManager.load("floor", "resources/assets/FLAT5_8.png");
   m_textureManager.load("step1", "resources/assets/STEP1.png");
   m_textureManager.load("step2", "resources/assets/STEP2.png");
   m_textureManager.load("sinner", "resources/assets/WALL50_1.png");
+  m_textureManager.load("nwall", "resources/assets/COMP02_5.png");
+  m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
+  m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
+
+  sf::Vector2f playerInitialPosition;
 
   if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
   {
     tm->tileAppearanceMap['#'] = {"wall_texture", {}};
     tm->tileAppearanceMap['P'] = {"step1", {"step1", "step2"}, 0.5f};
     tm->tileAppearanceMap['S'] = {"sinner", {}};
+    tm->tileAppearanceMap['N'] = { "nwall", {} };
+    tm->tileAppearanceMap['1'] = { "1wall", {} };
+    tm->tileAppearanceMap['2'] = { "2wall", {} };
     tm->floorTextureId = "floor";
+
+    playerInitialPosition = tm->getSpawnPosition();
   }
+
+  m_player = initPlayer(m_registry, playerInitialPosition, player_radius, player_speed, player_rotation_speed);
 }
 
 void Game::handleEvents()

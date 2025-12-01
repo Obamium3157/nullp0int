@@ -82,7 +82,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Configuration config, const En
             {
                 const int tx = static_cast<int>(std::floor(x_h));
                 const int ty = static_cast<int>(std::floor(y));
-                if (!insideMapIs(map, tx, ty) || map->isWall(tx, ty))
+                if (map->isWall(tx, ty))
                 {
                     nearestHorizontalDist = distToNextHorizontal;
                     horizontalHitWorldX = x_h;
@@ -113,7 +113,7 @@ void ecs::RayCasting::rayCast(Registry &registry, Configuration config, const En
             {
                 const int tx = static_cast<int>(std::floor(x));
                 const int ty = static_cast<int>(std::floor(y_v));
-                if (!insideMapIs(map, tx, ty) || map->isWall(tx, ty))
+                if (map->isWall(tx, ty))
                 {
                     nearestVerticalDist = distToNextVertical;
                     verticalHitWorldX = x;

@@ -223,8 +223,7 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
     }
 
     const sf::Texture* tex = nullptr;
-    auto cacheIt = textureCache.find(texId);
-    if (cacheIt != textureCache.end()) {
+    if (auto cacheIt = textureCache.find(texId); cacheIt != textureCache.end()) {
       tex = cacheIt->second;
     } else {
       tex = textureManager.get(texId);
