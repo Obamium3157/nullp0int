@@ -35,6 +35,9 @@ private:
 
   sf::Clock m_globalTimer;
 
+  void init_textures();
+  void init_player();
+  void init_tilemap(uint32_t seed);
   void init();
   void handleEvents();
   void update(float dt);

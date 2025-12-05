@@ -8,7 +8,6 @@
 #define NULLP0INT_COMPONENTS_H
 
 #include <cmath>
-#include <memory>
 #include <unordered_map>
 #include <SFML/Graphics/RenderWindow.hpp>
 

@@ -17,7 +17,7 @@
 #include "../ecs/systems/render/TextureManager.h"
 
 Game::Game(const unsigned windowW, const unsigned windowH, const std::string &title, const unsigned antialiasing)
-  : m_window(sf::VideoMode(windowW, windowH),    title,
+  : m_window(sf::VideoMode(windowW, windowH),title,
     sf::Style::Default,
     sf::ContextSettings{ 0, 0, antialiasing }
   )
@@ -39,16 +39,15 @@ void Game::run()
   }
 }
 
-void Game::init()
+void Game::init_tilemap(const uint32_t seed)
 {
-  MapGenerationSystem mgs{40, 40, 1337};
+  MapGenerationSystem mgs{40, 40, seed};
   const std::string filename = mgs.generateLevel(20);
-
-  const auto player_radius = m_config.player_radius;
-  const auto player_speed = m_config.player_speed;
-  const auto player_rotation_speed = m_config.player_rotation_speed;
   m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
+}
 
+void Game::init_textures()
+{
   m_textureManager.load("wall_texture", "resources/assets/DOOR2_4.png");
   m_textureManager.load("floor", "resources/assets/FLAT5_8.png");
   m_textureManager.load("step1", "resources/assets/STEP1.png");
@@ -57,8 +56,6 @@ void Game::init()
   m_textureManager.load("nwall", "resources/assets/COMP02_5.png");
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
-
-  sf::Vector2f playerInitialPosition;
 
   if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
   {
@@ -69,12 +66,32 @@ void Game::init()
     tm->tileAppearanceMap['1'] = { "1wall", {} };
     tm->tileAppearanceMap['2'] = { "2wall", {} };
     tm->floorTextureId = "floor";
+  }
+}
 
+void Game::init_player()
+{
+  const auto player_radius = m_config.player_radius;
+  const auto player_speed = m_config.player_speed;
+  const auto player_rotation_speed = m_config.player_rotation_speed;
+
+  sf::Vector2f playerInitialPosition;
+  if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
+  {
     playerInitialPosition = tm->getSpawnPosition();
   }
 
+
   m_player = initPlayer(m_registry, playerInitialPosition, player_radius, player_speed, player_rotation_speed);
 }
+
+void Game::init()
+{
+  init_tilemap(9019);
+  init_textures();
+  init_player();
+}
+
 
 void Game::handleEvents()
 {
