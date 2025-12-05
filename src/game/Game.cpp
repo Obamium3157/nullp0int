@@ -41,8 +41,8 @@ void Game::run()
 
 void Game::init_tilemap(const uint32_t seed)
 {
-  MapGenerationSystem mgs{40, 40, seed};
-  const std::string filename = mgs.generateLevel(20);
+  MapGenerationSystem mgs{100, 100, seed};
+  const std::string filename = mgs.generateLevel(30);
   m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
 }
 

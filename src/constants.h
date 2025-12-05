@@ -10,8 +10,9 @@ constexpr unsigned SCREEN_HEIGHT                      = 1080;
 constexpr unsigned HALF_SCREEN_WIDTH                  = SCREEN_WIDTH / 2.f;
 constexpr unsigned HALF_SCREEN_HEIGHT                 = SCREEN_HEIGHT / 2.f;
 constexpr float    RAY_ANGLE_OFFSET                   = 0.0001f;
-constexpr float    SMALL_EPSILON                      = 0.0001f;
-constexpr float    BIG_EPSILON                        = 1e-6f;
+constexpr double   SMALL_EPSILON                      = 0.0001;
+constexpr double   BIG_EPSILON                        = 1e-6;
+constexpr double   EPSILON_DIST                       = 1e-9;
 constexpr float    SAFE_REPEAT_BEFORE_NORMALIZATION   = 1024.f;
 
 #endif //NULLP0INT_CONSTANTS_H

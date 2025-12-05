@@ -140,6 +140,7 @@ namespace ecs
     int tileX = -1;
     int tileY = -1;
     bool vertical = false;
+    float rayAngle = 0.f;
   };
 
   struct RayCastResultComponent

@@ -185,7 +185,14 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
       continue;
     }
 
-    const float correctedDepth = hit.distance * (fishEyeCorrection ? 1 : std::cos(ang - rayAngle));
+    const float rayA = hit.rayAngle;
+
+    float correctedDepth = hit.distance;
+    if (fishEyeCorrection)
+    {
+      correctedDepth *= std::cos(ang - rayA);
+    }
+
     const float projHeight = screenDist * config.tile_size / (correctedDepth + BIG_EPSILON);
     const float h = std::min(projHeight, static_cast<float>(SCREEN_HEIGHT) * 2.f);
     const float columnX = static_cast<float>(i) * columnWidth;
@@ -237,19 +244,33 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
       continue;
     }
 
-    float u = hit.vertical ?
-             std::fmod(hit.hitPointWorld.y, config.tile_size) / config.tile_size :
-             std::fmod(hit.hitPointWorld.x, config.tile_size) / config.tile_size;
-    if (u < 0) u += 1.f;
+    float u;
+    {
+      const float tileSizeF = config.tile_size;
+      if (hit.vertical)
+      {
+        const float hitYTiles = hit.hitPointWorld.y / tileSizeF;
+        float frac = hitYTiles - std::floor(hitYTiles);
+        if (frac < 0.f) frac += 1.f;
+        u = std::cos(rayA) > 0.f ? frac : (1.f - frac);
+      }
+      else
+      {
+        const float hitXTiles = hit.hitPointWorld.x / tileSizeF;
+        float frac = hitXTiles - std::floor(hitXTiles);
+        if (frac < 0.f) frac += 1.f;
+        u = std::sin(rayA) > 0.f ? (1.f - frac) : frac;
+      }
+    }
 
     const int texWidth = static_cast<int>(tex->getSize().x);
     const int texHeight = static_cast<int>(tex->getSize().y);
 
-    int sampleCenter = static_cast<int>(std::floor(u * static_cast<float>(texWidth))) % texWidth;
+    int sampleCenter = static_cast<int>(std::floor(u * static_cast<float>(texWidth) + 0.0001f)) % texWidth;
     if (sampleCenter < 0) sampleCenter += texWidth;
 
     const float projTileWidth = screenDist * config.tile_size / (correctedDepth + BIG_EPSILON);
-    const float texelsPerPixel = static_cast<float>(texWidth) / (projTileWidth + BIG_EPSILON);
+    const float texelsPerPixel = texWidth / (projTileWidth + BIG_EPSILON);
     const int sourceWidth = std::max(1, static_cast<int>(std::round(texelsPerPixel * columnWidth)));
 
     int sx = sampleCenter - sourceWidth / 2;
