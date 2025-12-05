@@ -42,7 +42,7 @@ void Game::run()
 void Game::init_tilemap(const uint32_t seed)
 {
   MapGenerationSystem mgs{100, 100, seed};
-  const std::string filename = mgs.generateLevel(30);
+  const std::string filename = mgs.generateLevel(50);
   m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
 }
 
@@ -61,8 +61,11 @@ void Game::init_textures()
   {
     tm->tileAppearanceMap['#'] = {"wall_texture", {}};
     tm->tileAppearanceMap['P'] = {"step1", {"step1", "step2"}, 0.5f};
+    tm->tileAppearanceMap['p'] = {"step1", {"step1", "step2"}, 0.5f};
     tm->tileAppearanceMap['S'] = {"sinner", {}};
+    tm->tileAppearanceMap['s'] = {"sinner", {}};
     tm->tileAppearanceMap['N'] = { "nwall", {} };
+    tm->tileAppearanceMap['n'] = { "nwall", {} };
     tm->tileAppearanceMap['1'] = { "1wall", {} };
     tm->tileAppearanceMap['2'] = { "2wall", {} };
     tm->floorTextureId = "floor";

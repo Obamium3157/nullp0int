@@ -3,6 +3,7 @@
 //
 
 #include "MapGenerationSystem.h"
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <queue>
@@ -32,6 +33,13 @@ MapGenerationSystem::MapGenerationSystem(const int width, const int height, cons
 
 void MapGenerationSystem::generatePassage(const Point &start, const Point &finish)
 {
+
+  auto isProtected = [this](const int px, const int py) -> bool {
+    if (px < 0 || py < 0 || px >= m_width || py >= m_height) return false;
+    const char ch = m_data[px + py * m_width];
+    return static_cast<bool>(std::isupper(static_cast<unsigned char>(ch)));
+  };
+
   std::vector parents(m_width * m_height, -1);
 
   std::priority_queue<Point> active;
@@ -50,6 +58,8 @@ void MapGenerationSystem::generatePassage(const Point &start, const Point &finis
       Point p = { point.x - directions[i][0], point.y - directions[i][1], 0 };
       if (p.x < 0 || p.y < 0 || p.x >= m_width || p.y >= m_height) continue;
 
+      if (isProtected(p.x, p.y)) continue;
+
       if (parents[p.x + p.y * m_width] < 0)
       {
         p.cost = calcCost(p, finish);
@@ -60,15 +70,24 @@ void MapGenerationSystem::generatePassage(const Point &start, const Point &finis
     }
   }
 
+  if (parents[finish.x + finish.y * m_width] < 0)
+  {
+    return;
+  }
+
   Point point = finish;
   while (point != start)
   {
-    if (m_data[point.x + point.y * m_width] != '*' && m_data[point.x + point.y * m_width] != '>')
+    char &cell = m_data[point.x + point.y * m_width];
+    if (cell != '*' && cell != '>' && !std::isupper(static_cast<unsigned char>(cell)))
     {
-      m_data[point.x + point.y * m_width] = ' ';
+      cell = ' ';
     }
 
-    const int *direction = directions[parents[point.x + point.y * m_width]];
+    const int parentIndex = parents[point.x + point.y * m_width];
+    if (parentIndex < 0) break;
+
+    const int *direction = directions[parentIndex];
     point.x += direction[0];
     point.y += direction[1];
   }
@@ -99,7 +118,8 @@ void MapGenerationSystem::generate(const int roomsCount)
 {
   m_rooms.clear();
 
-  std::uniform_int_distribution<int> roomTypeDist(0, 1);
+  std::uniform_int_distribution roomTypeDist;
+  std::uniform_int_distribution presetIndexDist(0, static_cast<int>(normalPresets.size()) - 1);
 
   for (int i = 0; i < roomsCount; ++i)
   {
@@ -109,38 +129,37 @@ void MapGenerationSystem::generate(const int roomsCount)
     if (i == 0)
     {
       preset = entrancePreset;
-      w = 8;
-      h = 5;
+      w = static_cast<int>(entrancePreset[0].size());
+      h = static_cast<int>(entrancePreset.size());
     }
     else if (i == roomsCount - 1)
     {
       preset = exitPreset;
-      w = 8;
-      h = 5;
+      w = static_cast<int>(exitPreset[0].size());
+      h = static_cast<int>(exitPreset.size());
     }
     else
     {
-      if (roomTypeDist(m_rng) == 0)
+      const int idx = presetIndexDist(m_rng);
+      preset = normalPresets[idx];
+      h = static_cast<int>(preset.size());
+      w = h > 0 ? static_cast<int>(preset[0].size()) : 1;
+
+      for (const auto &row : preset)
       {
-        preset = normalPresets[0];
+        if (static_cast<int>(row.size()) > w) w = static_cast<int>(row.size());
       }
-      else
-      {
-        preset = normalPresets[1];
-      }
-      w = 8;
-      h = 6;
     }
 
-    auto xPosDist = std::uniform_int_distribution(
-      3,
-      m_width - w - 4
-    );
-    auto yPosDist = std::uniform_int_distribution(
-      3,
-      m_height - h - 4
-    );
+    constexpr int minX = 3;
+    constexpr int minY = 3;
+    int maxX = m_width - w - 4;
+    int maxY = m_height - h - 4;
+    if (maxX < minX) maxX = minX;
+    if (maxY < minY) maxY = minY;
 
+    auto xPosDist = std::uniform_int_distribution(minX, maxX);
+    auto yPosDist = std::uniform_int_distribution(minY, maxY);
 
     for (int j = 0; j < 1000; ++j)
     {
@@ -170,6 +189,7 @@ void MapGenerationSystem::generate(const int roomsCount)
     }
   }
 }
+
 
 void MapGenerationSystem::build()
 {

@@ -11,19 +11,19 @@
 using RoomPreset = std::vector<std::string>;
 
 const RoomPreset entrancePreset = {
-  "PPPPPPPP",
-  "P      P",
-  "P  *   P",
-  "P      P",
-  "PPPPPPPP"
+  "pppppppp",
+  "p      p",
+  "p  *   p",
+  "p      p",
+  "pppppppp"
 };
 
 const RoomPreset exitPreset = {
-  "NNNNNNNN",
-  "N      N",
-  "N  >   N",
-  "N      N",
-  "NNNNNNNN"
+  "nnnnnnnn",
+  "n      n",
+  "n  >   n",
+  "n      n",
+  "nnnnnnnn"
 };
 
 const std::vector<RoomPreset> normalPresets = {
@@ -38,11 +38,29 @@ const std::vector<RoomPreset> normalPresets = {
    {
      "22222222",
      "2      2",
-     "2     22",
-     "2    222",
-     "2     22",
+     "22     2",
+     "222    2",
+     "22     2",
      "22222222"
-    }
+    },
+  {
+    "####################",
+    "#                  #",
+    "#            NNNNN #",
+    "#  NNN       N     #",
+    "#     N      N     #",
+    "#      N     N     #",
+    "#            N     #",
+    "#            N     #",
+    "#   N22N     N     #",
+    "#    NN            #",
+    "#                  #",
+    "#          NNN     #",
+    "#          NNN     #",
+    "#          NNN     #",
+    "#                  #",
+    "####################",
+  }
 };
 
 #endif //NULLP0INT_ROOMPRESETS_H
