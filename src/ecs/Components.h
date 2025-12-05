@@ -64,6 +64,22 @@ namespace ecs
     float moveSpeed = 150.f;
   };
 
+  enum class EnemyClass
+  {
+    MELEE,
+    RANGE,
+    SUPPORT,
+  };
+
+  struct EnemyComponent
+  {
+    EnemyClass cls = EnemyClass::MELEE;
+    std::string textureId;
+    float spriteScale = 1.f;
+    float heightShift = 0.27f;
+  };
+  struct EnemyTag{};
+
 
   struct TilemapTag{};
 

@@ -15,6 +15,7 @@
 #include "../ecs/systems/render/RayCasting.h"
 #include "../ecs/systems/render/RenderSystem.h"
 #include "../ecs/systems/render/TextureManager.h"
+#include "entities/enemy/EnemyFactory.h"
 
 Game::Game(const unsigned windowW, const unsigned windowH, const std::string &title, const unsigned antialiasing)
   : m_window(sf::VideoMode(windowW, windowH),title,
@@ -41,9 +42,10 @@ void Game::run()
 
 void Game::init_tilemap(const uint32_t seed)
 {
-  MapGenerationSystem mgs{100, 100, seed};
-  const std::string filename = mgs.generateLevel(50);
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
+  // MapGenerationSystem mgs{100, 100, seed};
+  // const std::string filename = mgs.generateLevel(50);
+  // m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
+  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/map2.txt");
 }
 
 void Game::init_textures()
@@ -56,6 +58,12 @@ void Game::init_textures()
   m_textureManager.load("nwall", "resources/assets/COMP02_5.png");
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
+
+
+  m_textureManager.load("melee_enemy", "resources/assets/BOSSA1.png");
+  m_textureManager.load("range_enemy", "resources/assets/PLAYA1.png");
+  m_textureManager.load("support_enemy", "resources/assets/HEADD1.png");
+
 
   if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
   {
@@ -93,6 +101,20 @@ void Game::init()
   init_tilemap(9019);
   init_textures();
   init_player();
+
+  if (m_player != ecs::INVALID_ENTITY)
+  {
+    if (auto* ppos = m_registry.getComponent<ecs::PositionComponent>(m_player))
+    {
+      constexpr float offsetTiles = 3.f;
+      const sf::Vector2f enemyPos = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f);
+
+      const float enemyRadius = m_config.player_radius;
+      const float enemySpeed = m_config.player_speed * 0.5f;
+
+      initEnemy(m_registry, ecs::EnemyClass::RANGE, enemyPos, enemyRadius, enemySpeed);
+    }
+  }
 }
 
 
