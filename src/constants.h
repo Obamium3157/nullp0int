@@ -14,5 +14,6 @@ constexpr double   SMALL_EPSILON                      = 0.0001;
 constexpr double   BIG_EPSILON                        = 1e-6;
 constexpr double   EPSILON_DIST                       = 1e-9;
 constexpr float    SAFE_REPEAT_BEFORE_NORMALIZATION   = 1024.f;
+constexpr unsigned MAX_ITEMS_TO_RENDER                = 8192;
 
 #endif //NULLP0INT_CONSTANTS_H

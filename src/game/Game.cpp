@@ -59,6 +59,7 @@ void Game::init_textures()
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
 
+  m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
 
   m_textureManager.load("melee_enemy", "resources/assets/BOSSA1.png");
   m_textureManager.load("range_enemy", "resources/assets/PLAYA1.png");
@@ -108,11 +109,13 @@ void Game::init()
     {
       constexpr float offsetTiles = 3.f;
       const sf::Vector2f enemyPos = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f);
+      const sf::Vector2f enemyPos1 = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f) * 2.f;
 
       const float enemyRadius = m_config.player_radius;
       const float enemySpeed = m_config.player_speed * 0.5f;
 
       initEnemy(m_registry, ecs::EnemyClass::RANGE, enemyPos, enemyRadius, enemySpeed);
+      initEnemy(m_registry, ecs::EnemyClass::MELEE, enemyPos1, enemyRadius, enemySpeed);
     }
   }
 }

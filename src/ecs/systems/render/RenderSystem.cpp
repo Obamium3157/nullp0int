@@ -15,7 +15,9 @@
 #include "../../../configuration/Configuration.h"
 #include "../../../math/mathUtils.h"
 
-void ecs::RenderSystem::render(Registry &registry, const Configuration &config, sf::RenderWindow &window, const Entity &m_tilemap, const float globalTime, const TextureManager &textureManager)
+using namespace ecs;
+
+void RenderSystem::render(Registry &registry, const Configuration &config, sf::RenderWindow &window, const Entity &m_tilemap, const float globalTime, const TextureManager &textureManager)
 {
   const sf::Color ceilingColor(4, 2, 115);
   sf::RectangleShape ceiling(sf::Vector2f(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT) / 2.f));
@@ -46,12 +48,25 @@ void ecs::RenderSystem::render(Registry &registry, const Configuration &config, 
   if (!posComp || !rotComp || !rayResults) return;
 
   renderFloor(registry, config, window, m_tilemap, rotComp->angle, posComp->position, textureManager);
-  renderWalls(registry, config, window, m_tilemap, rotComp->angle, *rayResults, globalTime, textureManager);
-  renderEnemies(registry, config, window, textureManager);
+
+  std::vector<RenderItem> items;
+  items.reserve(MAX_ITEMS_TO_RENDER);
+
+  renderWalls(registry, config, m_tilemap, rotComp->angle, *rayResults, globalTime, textureManager, items);
+  renderEnemies(registry, config, textureManager, items);
+
+  std::ranges::sort(
+    items, [](const RenderItem& a, const RenderItem& b){
+    return a.depth > b.depth;
+  });
+  for (const auto &it : items)
+  {
+    window.draw(it.sprite);
+  }
 }
 
 
-void ecs::RenderSystem::renderFloor(Registry &registry, Configuration config, sf::RenderWindow &window, const Entity& m_tilemap, float playerRotationAngle, const sf::Vector2f playerPos, const TextureManager& textureManager)
+void RenderSystem::renderFloor(Registry &registry, Configuration config, sf::RenderWindow &window, const Entity& m_tilemap, float playerRotationAngle, const sf::Vector2f playerPos, const TextureManager& textureManager)
 {
   auto* tilemapComp = registry.getComponent<TilemapComponent>(m_tilemap);
   if (!tilemapComp) return;
@@ -158,7 +173,7 @@ void ecs::RenderSystem::renderFloor(Registry &registry, Configuration config, sf
 }
 
 
-void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf::RenderWindow &window, const Entity& tilemapEntity, float playerAngle, const RayCastResultComponent& rayResults, float globalTime, const TextureManager& textureManager)
+void RenderSystem::renderWalls(Registry &registry, Configuration config, const Entity& tilemapEntity, float playerAngle, const RayCastResultComponent& rayResults, float globalTime, const TextureManager& textureManager, std::vector<RenderItem>& items)
 {
   auto* tilemapComp = registry.getComponent<TilemapComponent>(tilemapEntity);
   if (!tilemapComp || rayResults.hits.empty()) return;
@@ -203,7 +218,17 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
         hit.tileX >= static_cast<int>(tilemapComp->width) ||
         hit.tileY >= static_cast<int>(tilemapComp->height))
     {
-      drawSolidColumn(window, columnX, columnY, columnWidth, h, correctedDepth, maxAttenuationDist);
+      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      {
+        sf::Sprite sprite(*solidTex);
+        sprite.setScale(columnWidth, h);
+        sprite.setPosition(columnX, columnY);
+        float brightness = 1.f - std::min(correctedDepth / maxAttenuationDist, 1.f);
+        uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+        RenderItem it; it.depth = correctedDepth; it.sprite = sprite;
+        items.push_back(std::move(it));
+      }
       rayAngle += deltaAngle;
       continue;
     }
@@ -213,7 +238,17 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
 
     if (appIt == tilemapComp->tileAppearanceMap.end())
     {
-      drawSolidColumn(window, columnX, columnY, columnWidth, h, correctedDepth, maxAttenuationDist);
+      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      {
+        sf::Sprite sprite(*solidTex);
+        sprite.setScale(columnWidth, h);
+        sprite.setPosition(columnX, columnY);
+        float brightness = 1.f - std::min(correctedDepth / maxAttenuationDist, 1.f);
+        uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+        RenderItem it; it.depth = correctedDepth; it.sprite = sprite;
+        items.push_back(std::move(it));
+      }
       rayAngle += deltaAngle;
       continue;
     }
@@ -225,7 +260,17 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
 
     if (texId.empty())
     {
-      drawSolidColumn(window, columnX, columnY, columnWidth, h, correctedDepth, maxAttenuationDist);
+      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      {
+        sf::Sprite sprite(*solidTex);
+        sprite.setScale(columnWidth, h);
+        sprite.setPosition(columnX, columnY);
+        float brightness = 1.f - std::min(correctedDepth / maxAttenuationDist, 1.f);
+        uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+        RenderItem it; it.depth = correctedDepth; it.sprite = sprite;
+        items.push_back(std::move(it));
+      }
       rayAngle += deltaAngle;
       continue;
     }
@@ -240,7 +285,17 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
 
     if (!tex)
     {
-      drawSolidColumn(window, columnX, columnY, columnWidth, h, correctedDepth, maxAttenuationDist);
+      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      {
+        sf::Sprite sprite(*solidTex);
+        sprite.setScale(columnWidth, h);
+        sprite.setPosition(columnX, columnY);
+        float brightness = 1.f - std::min(correctedDepth / maxAttenuationDist, 1.f);
+        uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+        RenderItem it; it.depth = correctedDepth; it.sprite = sprite;
+        items.push_back(std::move(it));
+      }
       rayAngle += deltaAngle;
       continue;
     }
@@ -289,12 +344,16 @@ void ecs::RenderSystem::renderWalls(Registry &registry, Configuration config, sf
     const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
     sprite.setColor(sf::Color(bright, bright, bright));
 
-    window.draw(sprite);
+    RenderItem it;
+    it.depth = correctedDepth;
+    it.sprite = sprite;
+    items.push_back(std::move(it));
+
     rayAngle += deltaAngle;
   }
 }
 
-void ecs::RenderSystem::drawSolidColumn(sf::RenderWindow &window, const float x, const  float y, const float width, const float height, const float depth, const float maxAttenuationDist)
+void RenderSystem::drawSolidColumn(sf::RenderWindow &window, const float x, const  float y, const float width, const float height, const float depth, const float maxAttenuationDist)
 {
   const float brightness = 1.f - std::min(depth / maxAttenuationDist, 1.f);
   const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
@@ -304,7 +363,8 @@ void ecs::RenderSystem::drawSolidColumn(sf::RenderWindow &window, const float x,
   window.draw(column);
 }
 
-void ecs::RenderSystem::renderEnemies(Registry &registry, const Configuration &config, sf::RenderWindow &window, const TextureManager &textureManager)
+
+void RenderSystem::renderEnemies(Registry &registry, const Configuration &config, const TextureManager &textureManager, std::vector<RenderItem>& items)
 {
   Entity player = INVALID_ENTITY;
   for (const auto &e : registry.entities())
@@ -323,28 +383,43 @@ void ecs::RenderSystem::renderEnemies(Registry &registry, const Configuration &c
   if (!posComp || !rotComp || !rayResults) return;
   if (rayResults->hits.empty()) return;
 
-  const int amount_of_rays = static_cast<int>(rayResults->hits.size());
-  const float fov = config.fov;
-  const float halfFov = fov * 0.5f;
-  const float deltaAngle = fov / static_cast<float>(amount_of_rays);
-  const float windowW = static_cast<float>(window.getSize().x);
-  const float windowH = static_cast<float>(window.getSize().y);
-  const float screenDist = (windowW * 0.5f) / std::tan(halfFov);
-  const float columnWidth = windowW / static_cast<float>(amount_of_rays);
+  const int       amount_of_rays = static_cast<int>(rayResults->hits.size());
+  const float     fov            = config.fov;
+  const float     halfFov        = fov * 0.5f;
+  const float     deltaAngle     = fov / static_cast<float>(amount_of_rays);
+  constexpr auto  windowW        = static_cast<float>(SCREEN_WIDTH);
+  constexpr auto  windowH        = static_cast<float>(SCREEN_HEIGHT);
+  const float     screenDist     = (windowW * 0.5f) / std::tan(halfFov);
+  const float     columnWidth    = windowW / static_cast<float>(amount_of_rays);
 
-  for (const auto &e : registry.entities())
+  struct EnemyEntry { Entity e; float dist; const PositionComponent* pos; const EnemyComponent* comp; };
+  std::vector<EnemyEntry> enemies;
+  for (const auto &ent : registry.entities())
   {
-    if (!registry.hasComponent<EnemyTag>(e)) continue;
-    const auto* epos = registry.getComponent<PositionComponent>(e);
-    const auto* enemyComp = registry.getComponent<EnemyComponent>(e);
+    if (!registry.hasComponent<EnemyTag>(ent)) continue;
+    const auto* epos = registry.getComponent<PositionComponent>(ent);
+    const auto* enemyComp = registry.getComponent<EnemyComponent>(ent);
     if (!epos || !enemyComp) continue;
-
     const float dx = epos->position.x - posComp->position.x;
     const float dy = epos->position.y - posComp->position.y;
     const float enemyDist = std::hypot(dx, dy);
     if (!std::isfinite(enemyDist) || enemyDist <= 0.f) continue;
+    enemies.push_back(EnemyEntry{ent, enemyDist, epos, enemyComp});
+  }
 
-    double playerAngleRad = radiansFromDegrees(rotComp->angle);
+  std::ranges::sort(
+    enemies, [](auto &a, auto &b){ return a.dist > b.dist; });
+
+  const double playerAngleRad = radiansFromDegrees(rotComp->angle);
+
+  for (const auto &entry : enemies)
+  {
+    const auto* epos = entry.pos;
+    const auto* enemyComp = entry.comp;
+    const float dx = epos->position.x - posComp->position.x;
+    const float dy = epos->position.y - posComp->position.y;
+    const float enemyDist = entry.dist;
+
     double angleToEnemy = std::atan2(static_cast<double>(dy), static_cast<double>(dx));
     double delta = angleToEnemy - playerAngleRad;
     while (delta > M_PI) delta -= 2.0 * M_PI;
@@ -352,20 +427,22 @@ void ecs::RenderSystem::renderEnemies(Registry &registry, const Configuration &c
 
     if (std::abs(delta) > static_cast<double>(halfFov)) continue;
 
-    int rayIndex = static_cast<int>(std::floor((delta + halfFov) / deltaAngle));
-    rayIndex = std::clamp(rayIndex, 0, amount_of_rays - 1);
+    int centerRay = static_cast<int>(std::floor((delta + static_cast<double>(halfFov)) / static_cast<double>(deltaAngle)));
+    centerRay = std::clamp(centerRay, 0, amount_of_rays - 1);
 
-    const auto &hit = rayResults->hits[rayIndex];
+    const auto &hit = rayResults->hits[centerRay];
     if (hit.distance <= 0.f || !std::isfinite(hit.distance)) continue;
 
     if (enemyDist + SMALL_EPSILON >= hit.distance) continue;
 
-    const float normDist = static_cast<float>(enemyDist * std::cos(delta));
+    const auto normDist = static_cast<float>(enemyDist * std::cos(delta));
     if (normDist <= SMALL_EPSILON) continue;
 
     const float projHeight = screenDist * config.tile_size / (normDist + SMALL_EPSILON);
     const float projWidth = projHeight * 0.75f * enemyComp->spriteScale;
     const float screenX = ((static_cast<float>((delta + halfFov) / deltaAngle)) * columnWidth);
+    const float spriteX = screenX - (projWidth * 0.5f);
+    const float spriteY = (windowH * 0.5f) - (projHeight * 0.5f) + (projHeight * enemyComp->heightShift);
 
     if (!enemyComp->textureId.empty())
     {
@@ -377,12 +454,10 @@ void ecs::RenderSystem::renderEnemies(Registry &registry, const Configuration &c
         const float texW = static_cast<float>(tex->getSize().x);
         const float texH = static_cast<float>(tex->getSize().y);
 
-        const float scaleY = projHeight / texH;
-        const float scaleX = scaleY;
+        const float scaleX = (projWidth / texW) * enemyComp->spriteScale;
+        const float scaleY = (projHeight / texH) * enemyComp->spriteScale;
         sprite.setScale(scaleX, scaleY);
 
-        const float spriteX = screenX - (texW * 0.5f * scaleX);
-        const float spriteY = (windowH * 0.5f) - (projHeight * 0.5f) + (projHeight * enemyComp->heightShift);
         sprite.setPosition(spriteX, spriteY);
 
         const float maxAttenuation = config.attenuation_distance * config.tile_size;
@@ -390,21 +465,28 @@ void ecs::RenderSystem::renderEnemies(Registry &registry, const Configuration &c
         const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
         sprite.setColor(sf::Color(bright, bright, bright));
 
-        window.draw(sprite);
-        continue;
+        RenderItem it;
+        it.depth = normDist;
+        it.sprite = sprite;
+        items.push_back(std::move(it));
       }
     }
-
+    else
     {
-      sf::CircleShape sh(std::max(2.f, projWidth * 0.25f));
-      const float spriteX = screenX - sh.getRadius();
-      const float spriteY = (windowH * 0.5f) - (projHeight * 0.5f) + (projHeight * enemyComp->heightShift);
-      sh.setPosition(spriteX, spriteY);
-      const float maxAttenuation = config.attenuation_distance * config.tile_size;
-      const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
-      const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
-      sh.setFillColor(sf::Color(bright, bright, bright));
-      window.draw(sh);
+      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      {
+        sf::Sprite sprite(*solidTex);
+        sprite.setScale(projWidth, projHeight);
+        sprite.setPosition(spriteX, spriteY);
+        const float maxAttenuation = config.attenuation_distance * config.tile_size;
+        const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+        const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+        RenderItem it;
+        it.depth = normDist;
+        it.sprite = sprite;
+        items.push_back(std::move(it));
+      }
     }
   }
 }
