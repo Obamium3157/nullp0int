@@ -30,10 +30,9 @@ bool ecs::CollisionSystem::checkWallCollision(Registry &registry, const sf::Vect
   {
     for (int tx = minTileX; tx <= maxTileX; ++tx)
     {
-      if (ty >= map->tiles.size() || tx >= map->tiles[ty].length()) return true;
+      if (ty >= static_cast<int>(map->tiles.size()) || tx >= static_cast<int>(map->tiles[ty].length())) return true;
 
       if (!map->isWall(tx, ty)) continue;
-
 
       const auto tileLeft = static_cast<float>(tx) * ts;
       const auto tileRight = tileLeft + ts;
@@ -54,4 +53,52 @@ bool ecs::CollisionSystem::checkWallCollision(Registry &registry, const sf::Vect
   }
 
   return false;
+}
+
+bool ecs::CollisionSystem::checkEntityCollision(Registry &registry, const sf::Vector2f position, const float radius, Entity self)
+{
+  for (const auto &e : registry.entities())
+  {
+    if (e == self) continue;
+
+    const auto* otherPos = registry.getComponent<PositionComponent>(e);
+    const auto* otherRadius = registry.getComponent<RadiusComponent>(e);
+
+    if (!otherPos || !otherRadius) continue;
+
+    const float dx = position.x - otherPos->position.x;
+    const float dy = position.y - otherPos->position.y;
+    const float dist2 = dx * dx + dy * dy;
+
+    if (const float r_sum = radius + otherRadius->radius; dist2 < (r_sum * r_sum))
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+ecs::Entity ecs::CollisionSystem::findCollidingEntity(Registry &registry, const sf::Vector2f position, const float radius, Entity self)
+{
+  for (const auto &e : registry.entities())
+  {
+    if (e == self) continue;
+
+    const auto* otherPos = registry.getComponent<PositionComponent>(e);
+    const auto* otherRadius = registry.getComponent<RadiusComponent>(e);
+
+    if (!otherPos || !otherRadius) continue;
+
+    const float dx = position.x - otherPos->position.x;
+    const float dy = position.y - otherPos->position.y;
+    const float dist2 = dx * dx + dy * dy;
+
+    if (const float r_sum = radius + otherRadius->radius; dist2 < (r_sum * r_sum))
+    {
+      return e;
+    }
+  }
+
+  return INVALID_ENTITY;
 }

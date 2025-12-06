@@ -10,6 +10,7 @@
 #include "../ecs/systems/input/InputSystem.h"
 #include "../ecs/systems/map/MapLoaderSystem.h"
 #include "../ecs/systems/map_generation/MapGenerationSystem.h"
+#include "../ecs/systems/npc/EnemyControllerSystem.h"
 #include "../ecs/systems/physics/PhysicsSystem.h"
 #include "../ecs/systems/render/AnimationSystem.h"
 #include "../ecs/systems/render/RayCasting.h"
@@ -140,6 +141,7 @@ void Game::handleEvents()
 void Game::update(const float dt)
 {
   ecs::InputSystem::update(m_registry, m_config);
+  EnemyControllerSystem::update(m_registry);
   ecs::AnimationSystem::update(m_registry, dt);
   ecs::PhysicsSystem::update(m_registry, dt, m_tilemap);
   ecs::RayCasting::rayCast(m_registry, m_config, m_player);

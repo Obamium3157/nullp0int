@@ -41,6 +41,8 @@ add_executable(nullp0int src/main.cpp
         src/ecs/systems/map_generation/roomPresets.h
         src/game/entities/enemy/EnemyFactory.h
         src/game/entities/enemy/EnemyFactory.cpp
+        src/ecs/systems/npc/EnemyControllerSystem.h
+        src/ecs/systems/npc/EnemyControllerSystem.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)
