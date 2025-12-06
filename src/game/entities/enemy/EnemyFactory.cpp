@@ -37,5 +37,19 @@ ecs::Entity initEnemy(ecs::Registry &registry, const ecs::EnemyClass cls, const 
         0.27f
       });
 
+  if (cls == ecs::EnemyClass::MELEE)
+  {
+    ecs::SpriteComponent sc;
+    sc.textureFrames = { "melee_enemy_1", "melee_enemy_2" };
+    sc.frameTime = 0.09f;
+    sc.playing = true;
+    sc.loop = true;
+    sc.currentFrame = 0;
+    sc.frameAccumulator = 0.f;
+    sc.textureId = sc.textureFrames.front();
+
+    registry.addComponent<ecs::SpriteComponent>(enemy, sc);
+  }
+
   return enemy;
 }

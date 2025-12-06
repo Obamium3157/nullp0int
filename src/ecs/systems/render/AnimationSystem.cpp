@@ -9,30 +9,33 @@ void ecs::AnimationSystem::update(Registry &registry, const float dt)
 {
   for (const auto e : registry.entities())
   {
-    if (registry.hasComponent<SpriteComponent>(e))
+    if (!registry.hasComponent<SpriteComponent>(e)) continue;
+
+    auto* sc = registry.getComponent<SpriteComponent>(e);
+    if (!sc) continue;
+    if (!sc->playing) continue;
+
+    const std::size_t framesCount = !sc->textureFrames.empty() ? sc->textureFrames.size() : sc->frames.size();
+    if (framesCount == 0) continue;
+
+    if (sc->frameTime <= 0.f) continue;
+
+    sc->frameAccumulator += dt;
+    while (sc->frameAccumulator >= sc->frameTime)
     {
-      auto* sc = registry.getComponent<SpriteComponent>(e);
-
-      if (!sc) continue;
-      if (!sc->playing) continue;
-      if (sc->frames.empty()) continue;
-
-      sc->frameAccumulator += dt;
-      while (sc->frameAccumulator >= sc->frameTime)
+      sc->frameAccumulator -= sc->frameTime;
+      sc->currentFrame++;
+      if (sc->currentFrame >= framesCount)
       {
-        sc->frameAccumulator -= sc->frameTime;
-        sc->currentFrame++;
-        if (sc->currentFrame >= sc->frames.size())
+        if (sc->loop)
         {
-          if (sc->loop)
-          {
-            sc->currentFrame = 0;
-          }
-          else
-          {
-            sc->currentFrame = sc->frames.size() - 1; sc->playing = false;
-            break;
-          }
+          sc->currentFrame = 0;
+        }
+        else
+        {
+          sc->currentFrame = framesCount - 1;
+          sc->playing = false;
+          break;
         }
       }
     }

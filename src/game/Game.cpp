@@ -61,7 +61,11 @@ void Game::init_textures()
 
   m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
 
-  m_textureManager.load("melee_enemy", "resources/assets/BOSSA1.png");
+  // m_textureManager.load("melee_enemy", "resources/assets/BOSSA1.png");
+
+  m_textureManager.load("melee_enemy_1", "resources/assets/BOSSA1.png");
+  m_textureManager.load("melee_enemy_2", "resources/assets/BOSSC1.png");
+
   m_textureManager.load("range_enemy", "resources/assets/PLAYA1.png");
   m_textureManager.load("support_enemy", "resources/assets/HEADD1.png");
 

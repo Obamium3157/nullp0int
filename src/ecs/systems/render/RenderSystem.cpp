@@ -407,11 +407,11 @@ void RenderSystem::renderEnemies(Registry &registry, const Configuration &config
     enemies.push_back(EnemyEntry{ent, enemyDist, epos, enemyComp});
   }
 
-  std::ranges::sort(
-    enemies, [](auto &a, auto &b){ return a.dist > b.dist; });
+  std::ranges::sort(enemies, [](auto &a, auto &b){ return a.dist > b.dist; });
 
   const double playerAngleRad = radiansFromDegrees(rotComp->angle);
 
+  std::unordered_map<std::string, const sf::Texture*> textureCache;
   for (const auto &entry : enemies)
   {
     const auto* epos = entry.pos;
@@ -444,18 +444,67 @@ void RenderSystem::renderEnemies(Registry &registry, const Configuration &config
     const float spriteX = screenX - (projWidth * 0.5f);
     const float spriteY = (windowH * 0.5f) - (projHeight * 0.5f) + (projHeight * enemyComp->heightShift);
 
-    if (!enemyComp->textureId.empty())
+    if (const auto* sc = registry.getComponent<SpriteComponent>(entry.e); sc && !sc->textureFrames.empty())
     {
-      if (const sf::Texture* tex = textureManager.get(enemyComp->textureId))
+      const std::size_t idx = std::min(sc->currentFrame, sc->textureFrames.size() - 1);
+      const std::string& frameTexId = sc->textureFrames[idx];
+
+      const sf::Texture* tex = nullptr;
+      if (auto it = textureCache.find(frameTexId); it != textureCache.end()) tex = it->second;
+      else { tex = textureManager.get(frameTexId); textureCache[frameTexId] = tex; }
+
+      if (tex)
       {
-        sf::Sprite sprite;
-        sprite.setTexture(*tex);
+        sf::Sprite sprite(*tex);
 
         const float texW = static_cast<float>(tex->getSize().x);
         const float texH = static_cast<float>(tex->getSize().y);
 
-        const float scaleX = (projWidth / texW) * enemyComp->spriteScale;
-        const float scaleY = (projHeight / texH) * enemyComp->spriteScale;
+        const float scaleX = (projWidth / std::max(1.f, texW)) * enemyComp->spriteScale;
+        const float scaleY = (projHeight / std::max(1.f, texH)) * enemyComp->spriteScale;
+        sprite.setScale(scaleX, scaleY);
+        sprite.setPosition(spriteX, spriteY);
+
+        const float maxAttenuation = config.attenuation_distance * config.tile_size;
+        const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+        const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+        sprite.setColor(sf::Color(bright, bright, bright));
+
+        RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
+      }
+      else
+      {
+        if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+        {
+          sf::Sprite sprite(*solidTex);
+          sprite.setScale(projWidth, projHeight);
+          sprite.setPosition(spriteX, spriteY);
+          const float maxAttenuation = config.attenuation_distance * config.tile_size;
+          const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+          const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+          sprite.setColor(sf::Color(bright, bright, bright));
+          RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
+        }
+      }
+    }
+    else if (sc && !sc->frames.empty() && !sc->textureId.empty())
+    {
+      const std::size_t idx = std::min(sc->currentFrame, sc->frames.size() - 1);
+      const sf::IntRect rect = sc->frames[idx];
+      const std::string& texId = sc->textureId;
+
+      const sf::Texture* tex = nullptr;
+      if (auto it = textureCache.find(texId); it != textureCache.end()) tex = it->second;
+      else { tex = textureManager.get(texId); textureCache[texId] = tex; }
+
+      if (tex)
+      {
+        sf::Sprite sprite(*tex, rect);
+
+        const float rectW = static_cast<float>(std::max(1, rect.width));
+        const float rectH = static_cast<float>(std::max(1, rect.height));
+        const float scaleX = (projWidth / rectW) * enemyComp->spriteScale;
+        const float scaleY = (projHeight / rectH) * enemyComp->spriteScale;
         sprite.setScale(scaleX, scaleY);
 
         sprite.setPosition(spriteX, spriteY);
@@ -465,27 +514,67 @@ void RenderSystem::renderEnemies(Registry &registry, const Configuration &config
         const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
         sprite.setColor(sf::Color(bright, bright, bright));
 
-        RenderItem it;
-        it.depth = normDist;
-        it.sprite = sprite;
-        items.push_back(std::move(it));
+        RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
       }
     }
     else
     {
-      if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+      if (!enemyComp->textureId.empty())
       {
-        sf::Sprite sprite(*solidTex);
-        sprite.setScale(projWidth, projHeight);
-        sprite.setPosition(spriteX, spriteY);
-        const float maxAttenuation = config.attenuation_distance * config.tile_size;
-        const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
-        const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
-        sprite.setColor(sf::Color(bright, bright, bright));
-        RenderItem it;
-        it.depth = normDist;
-        it.sprite = sprite;
-        items.push_back(std::move(it));
+        const std::string& texId = enemyComp->textureId;
+        const sf::Texture* tex = nullptr;
+        if (auto it = textureCache.find(texId); it != textureCache.end()) tex = it->second;
+        else { tex = textureManager.get(texId); textureCache[texId] = tex; }
+
+        if (tex)
+        {
+          sf::Sprite sprite;
+          sprite.setTexture(*tex);
+
+          const float texW = static_cast<float>(tex->getSize().x);
+          const float texH = static_cast<float>(tex->getSize().y);
+
+          const float scaleX = (projWidth / texW) * enemyComp->spriteScale;
+          const float scaleY = (projHeight / texH) * enemyComp->spriteScale;
+          sprite.setScale(scaleX, scaleY);
+
+          sprite.setPosition(spriteX, spriteY);
+
+          const float maxAttenuation = config.attenuation_distance * config.tile_size;
+          const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+          const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+          sprite.setColor(sf::Color(bright, bright, bright));
+
+          RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
+        }
+        else
+        {
+          if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+          {
+            sf::Sprite sprite(*solidTex);
+            sprite.setScale(projWidth, projHeight);
+            sprite.setPosition(spriteX, spriteY);
+            const float maxAttenuation = config.attenuation_distance * config.tile_size;
+            const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+            const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+            sprite.setColor(sf::Color(bright, bright, bright));
+            RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
+          }
+        }
+      }
+      else
+      {
+        if (const sf::Texture* solidTex = textureManager.get("placeholder"))
+        {
+          sf::Sprite sprite(*solidTex);
+          sprite.setScale(projWidth, projHeight);
+          sprite.setPosition(spriteX, spriteY);
+          const float maxAttenuation = config.attenuation_distance * config.tile_size;
+          const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+          const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 30.f, 255.f));
+          sprite.setColor(sf::Color(bright, bright, bright));
+          RenderItem it; it.depth = normDist; it.sprite = sprite; items.push_back(std::move(it));
+        }
       }
     }
   }

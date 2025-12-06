@@ -169,6 +169,7 @@ namespace ecs
   {
     std::string textureId;
     std::vector<sf::IntRect> frames;
+    std::vector<std::string> textureFrames;
     float frameTime = 0.1f;
     bool playing = true;
     bool loop = true;
