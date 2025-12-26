@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include "../constants.h"
 #include "systems/render/Animation.h"
 
 namespace ecs
@@ -113,7 +114,13 @@ namespace ecs
       if (tx < 0 || ty < 0 || tx >= static_cast<int>(width) || ty >= static_cast<int>(height))
         return false;
 
-      return tiles[ty][tx] != ' ' && tiles[ty][tx] != '*';
+      const char c = tiles[ty][tx];
+
+      return c != FLOOR_MARKER
+        && c != SPAWN_MARKER
+        && c != MELEE_ENEMY_SPAWN_MARKER
+        && c != RANGE_ENEMY_SPAWN_MARKER
+        && c != SUPPORT_ENEMY_SPAWN_MARKER;
     }
 
     [[nodiscard]] sf::Vector2f getSpawnPosition() const
@@ -122,7 +129,7 @@ namespace ecs
       {
         for (unsigned tx = 0; tx < width; ++tx)
         {
-          if (tiles[ty][tx] == '*')
+          if (tiles[ty][tx] == SPAWN_MARKER)
           {
             return sf::Vector2f{
               static_cast<float>(tx) * tileSize + tileSize / 2.f,

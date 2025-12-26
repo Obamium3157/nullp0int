@@ -15,5 +15,12 @@ constexpr double   BIG_EPSILON                        = 1e-6;
 constexpr double   EPSILON_DIST                       = 1e-9;
 constexpr float    SAFE_REPEAT_BEFORE_NORMALIZATION   = 1024.f;
 constexpr unsigned MAX_ITEMS_TO_RENDER                = 8192;
+constexpr char     FLOOR_MARKER                       = ' ';
+constexpr char     SPAWN_MARKER                       = '*';
+constexpr char     END_MARKER                         = '>';
+constexpr char     MELEE_ENEMY_SPAWN_MARKER           = '&';
+constexpr char     RANGE_ENEMY_SPAWN_MARKER           = '9';
+constexpr char     SUPPORT_ENEMY_SPAWN_MARKER         = '@';
+
 
 #endif //NULLP0INT_CONSTANTS_H

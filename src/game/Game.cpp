@@ -108,22 +108,23 @@ void Game::init()
   init_tilemap(9019);
   init_textures();
   init_player();
+  spawnEnemiesFromMap(m_registry, m_tilemap, m_config);
 
-  if (m_player != ecs::INVALID_ENTITY)
-  {
-    if (auto* ppos = m_registry.getComponent<ecs::PositionComponent>(m_player))
-    {
-      constexpr float offsetTiles = 3.f;
-      const sf::Vector2f enemyPos = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f);
-      const sf::Vector2f enemyPos1 = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f) * 2.f;
-
-      const float enemyRadius = m_config.player_radius;
-      const float enemySpeed = m_config.player_speed * 0.5f;
-
-      initEnemy(m_registry, ecs::EnemyClass::RANGE, enemyPos, enemyRadius, enemySpeed);
-      initEnemy(m_registry, ecs::EnemyClass::MELEE, enemyPos1, enemyRadius, enemySpeed);
-    }
-  }
+  // if (m_player != ecs::INVALID_ENTITY)
+  // {
+  //   if (auto* ppos = m_registry.getComponent<ecs::PositionComponent>(m_player))
+  //   {
+  //     constexpr float offsetTiles = 3.f;
+  //     const sf::Vector2f enemyPos = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f);
+  //     const sf::Vector2f enemyPos1 = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f) * 2.f;
+  //
+  //     const float enemyRadius = m_config.player_radius;
+  //     const float enemySpeed = m_config.player_speed * 0.5f;
+  //
+  //     initEnemy(m_registry, ecs::EnemyClass::RANGE, enemyPos, enemyRadius, enemySpeed);
+  //     initEnemy(m_registry, ecs::EnemyClass::MELEE, enemyPos1, enemyRadius, enemySpeed);
+  //   }
+  // }
 }
 
 
