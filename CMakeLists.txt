@@ -43,6 +43,8 @@ add_executable(nullp0int src/main.cpp
         src/game/entities/enemy/EnemyFactory.cpp
         src/ecs/systems/npc/EnemyControllerSystem.h
         src/ecs/systems/npc/EnemyControllerSystem.cpp
+        src/ecs/systems/npc/PathfindingSystem.h
+        src/ecs/systems/npc/PathfindingSystem.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)
