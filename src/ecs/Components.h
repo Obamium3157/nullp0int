@@ -20,15 +20,6 @@ namespace ecs
     sf::Vector2f position{};
   };
 
-  struct SizeComponent
-  {
-    sf::Vector2f size{};
-  };
-  struct RadiusComponent
-  {
-    float radius = 0.f;
-  };
-
   struct VelocityComponent
   {
     sf::Vector2f velocity{};
@@ -53,9 +44,9 @@ namespace ecs
     float angle = 0.f;
   };
 
-  struct ColorComponent
+  struct RadiusComponent
   {
-    sf::Color color = sf::Color::White;
+    float radius = 0.f;
   };
 
   struct PlayerTag{};
@@ -77,11 +68,16 @@ namespace ecs
     std::string textureId;
     float spriteScale = 1.f;
     float heightShift = 0.27f;
+
+    bool hasSeenPlayer = false;
+    float visionRangeTiles = 40.f;
+    float fovDegrees = 360.f;
   };
   struct EnemyTag{};
 
 
   struct TilemapTag{};
+
 
   struct TileAppearance
   {
@@ -124,10 +120,9 @@ namespace ecs
     {
       for (unsigned ty = 0; ty < height; ++ty)
       {
-        const std::string& row = tiles[ty];
-        for (unsigned tx = 0; tx < width && tx < row.size(); ++tx)
+        for (unsigned tx = 0; tx < width; ++tx)
         {
-          if (row[tx] == '*')
+          if (tiles[ty][tx] == '*')
           {
             return sf::Vector2f{
               static_cast<float>(tx) * tileSize + tileSize / 2.f,

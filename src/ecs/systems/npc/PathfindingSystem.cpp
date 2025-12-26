@@ -4,251 +4,359 @@
 
 #include "PathfindingSystem.h"
 
-#include <deque>
+#include <algorithm>
+#include <cmath>
+#include <queue>
 #include <unordered_set>
+#include <vector>
+
+#include <SFML/System/Vector2.hpp>
 
 #include "../../Components.h"
 #include "../../../constants.h"
+#include "../../../math/mathUtils.h"
 
 namespace
 {
-  struct TilePos
+  struct Grid
   {
-    int x = 0;
-    int y = 0;
+    int w = 0;
+    int h = 0;
+    float tileSize = 64.f;
+    const ecs::TilemapComponent* map = nullptr;
 
-    friend bool operator==(const TilePos& a, const TilePos& b)
+    [[nodiscard]] bool inBounds(const int x, const int y) const
     {
-      return a.x == b.x && a.y == b.y;
+      return x >= 0 && y >= 0 && x < w && y < h;
+    }
+
+    // TilemapComponent::isWall() returns false for out-of-bounds, which is unsafe for path/LOS.
+    [[nodiscard]] bool blocked(const int x, const int y) const
+    {
+      if (!inBounds(x, y)) return true;
+      return map ? map->isWall(x, y) : true;
+    }
+
+    [[nodiscard]] int idx(const int x, const int y) const
+    {
+      return y * w + x;
+    }
+
+    [[nodiscard]] sf::Vector2f tileCenterWorld(const int x, const int y) const
+    {
+      return sf::Vector2f{
+        (static_cast<float>(x) + 0.5f) * tileSize,
+        (static_cast<float>(y) + 0.5f) * tileSize
+      };
     }
   };
 
-  [[nodiscard]] int tileIndex(const int x, const int y, const int w)
+  [[nodiscard]] ecs::Entity findPlayer(const ecs::Registry& registry)
   {
-    return y * w + x;
+    for (const auto& e : registry.entities())
+    {
+      if (registry.hasComponent<ecs::PlayerTag>(e)) return e;
+    }
+    return ecs::INVALID_ENTITY;
   }
 
-  [[nodiscard]] bool isPassable(const ecs::TilemapComponent& map, const int x, const int y)
+  [[nodiscard]] float length(const sf::Vector2f v)
   {
-    if (x < 0 || y < 0) return false;
-    if (x >= static_cast<int>(map.width) || y >= static_cast<int>(map.height)) return false;
-    if (y >= static_cast<int>(map.tiles.size())) return false;
-    if (x >= static_cast<int>(map.tiles[y].size())) return false;
-    return !map.isWall(x, y);
+    return std::sqrt(v.x * v.x + v.y * v.y);
   }
 
-  [[nodiscard]] sf::Vector2f tileCenterWorld(const ecs::TilemapComponent& map, const int x, const int y)
+  [[nodiscard]] sf::Vector2f normalizedOrZero(const sf::Vector2f v)
   {
-    const float ts = map.tileSize;
-    return { (static_cast<float>(x) + 0.5f) * ts, (static_cast<float>(y) + 0.5f) * ts };
+    const float len = length(v);
+    if (!std::isfinite(len) || len <= static_cast<float>(SMALL_EPSILON)) return {0.f, 0.f};
+    return { v.x / len, v.y / len };
   }
 
-  [[nodiscard]] float lengthSq(const sf::Vector2f v)
+  [[nodiscard]] bool hasLineOfSight(const Grid& g, const sf::Vector2i from, const sf::Vector2i to)
   {
-    return v.x * v.x + v.y * v.y;
+    int x0 = from.x;
+    int y0 = from.y;
+    const int x1 = to.x;
+    const int y1 = to.y;
+
+    if (!g.inBounds(x0, y0) || !g.inBounds(x1, y1)) return false;
+
+    const int dx = std::abs(x1 - x0);
+    const int sx = (x0 < x1) ? 1 : -1;
+
+    const int dy = -std::abs(y1 - y0);
+    const int sy = (y0 < y1) ? 1 : -1;
+
+    int err = dx + dy;
+
+    while (x0 != x1 || y0 != y1)
+    {
+      const int e2 = 2 * err;
+
+      if (e2 >= dy)
+      {
+        err += dy;
+        x0 += sx;
+      }
+
+      if (e2 <= dx)
+      {
+        err += dx;
+        y0 += sy;
+      }
+
+      if (g.blocked(x0, y0)) return false;
+    }
+
+    return true;
   }
 
-  [[nodiscard]] bool canMove(const ecs::TilemapComponent& map, const TilePos from, const TilePos to)
+  [[nodiscard]] bool passesFovCone(
+    ecs::Registry& registry,
+    const ecs::Entity enemy,
+    const ecs::EnemyComponent& enemyComp,
+    const sf::Vector2f toPlayerDir
+  )
   {
-    if (!isPassable(map, to.x, to.y)) return false;
+    if (enemyComp.fovDegrees >= 360.f) return true;
 
-    const int dx = to.x - from.x;
-    const int dy = to.y - from.y;
+    const auto* rot = registry.getComponent<ecs::RotationComponent>(enemy);
+    if (!rot)
+    {
+      return true;
+    }
 
-    if (dx == 0 || dy == 0) return true;
+    const float forwardRad = radiansFromDegrees(rot->angle);
+    const sf::Vector2f forward{ std::cos(forwardRad), std::sin(forwardRad) };
 
-    return isPassable(map, from.x + dx, from.y) && isPassable(map, from.x, from.y + dy);
+    const float dot = std::clamp(forward.x * toPlayerDir.x + forward.y * toPlayerDir.y, -1.f, 1.f);
+    const float angleRad = std::acos(dot);
+    const float angleDeg = angleRad * 180.f / 3.14159265358979323846f;
+
+    return angleDeg <= (enemyComp.fovDegrees * 0.5f);
   }
 }
 
-
-void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemap)
+void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEntity)
 {
-  const auto* map = registry.getComponent<TilemapComponent>(tilemap);
-  if (!map || map->width == 0 || map->height == 0) return;
-
-  Entity player = INVALID_ENTITY;
-  const auto& ents = registry.entities();
-  for (const auto& e : ents)
-  {
-    if (registry.hasComponent<PlayerTag>(e))
-    {
-      player = e;
-      break;
-    }
-  }
+  const Entity player = findPlayer(registry);
   if (player == INVALID_ENTITY) return;
 
   const auto* playerPos = registry.getComponent<PositionComponent>(player);
   if (!playerPos) return;
 
-  const sf::Vector2i playerTileI = map->worldToTile(playerPos->position);
-  const TilePos playerTile{ playerTileI.x, playerTileI.y };
+  const auto* tilemap = registry.getComponent<TilemapComponent>(tilemapEntity);
+  if (!tilemap) return;
 
-  if (!isPassable(*map, playerTile.x, playerTile.y)) return;
+  Grid g;
+  g.w = static_cast<int>(tilemap->width);
+  g.h = static_cast<int>(tilemap->height);
+  g.tileSize = tilemap->tileSize;
+  g.map = tilemap;
 
-  std::unordered_set<int> occupied;
-  occupied.reserve(64);
-  for (const auto& e : ents)
-  {
-    if (!registry.hasComponent<EnemyTag>(e)) continue;
-    const auto* pos = registry.getComponent<PositionComponent>(e);
-    if (!pos) continue;
-    const sf::Vector2i t = map->worldToTile(pos->position);
-    if (!isPassable(*map, t.x, t.y)) continue;
-    occupied.insert(tileIndex(t.x, t.y, static_cast<int>(map->width)));
-  }
+  if (g.w <= 0 || g.h <= 0) return;
 
-  const int w = static_cast<int>(map->width);
-  const int h = static_cast<int>(map->height);
-  const int total = w * h;
+  const sf::Vector2i playerTile = tilemap->worldToTile(playerPos->position);
+  if (!g.inBounds(playerTile.x, playerTile.y)) return;
 
-  static std::vector<int> dist;
-  static int cachedW = 0;
-  static int cachedH = 0;
-  static Entity cachedTilemap = INVALID_ENTITY;
-  static TilePos cachedPlayerTile{ std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
-
-  const bool mapChanged = (cachedTilemap != tilemap) || (cachedW != w) || (cachedH != h);
-
-  if (const bool playerMovedTile = cachedPlayerTile != playerTile;
-    mapChanged
-    || playerMovedTile
-    || static_cast<int>(dist.size()) != total)
-  {
-    dist.assign(total, -1);
-
-    std::pmr::deque<TilePos> q;
-    dist[tileIndex(playerTile.x, playerTile.y, w)] = 0;
-    q.push_back(playerTile);
-
-    constexpr int kDirs[8][2] = {
-      { -1,  0 }, {  1,  0 }, { 0, -1 }, { 0,  1 },
-      { -1, -1 }, {  1, -1 }, { 1,  1 }, { -1, 1 }
-    };
-
-    while (!q.empty())
-    {
-      const TilePos cur = q.front();
-      q.pop_front();
-
-      const int curIdx = tileIndex(cur.x, cur.y, w);
-      const int curD = dist[curIdx];
-
-      for (const auto& d : kDirs)
-      {
-        const TilePos nxt{ cur.x + d[0], cur.y + d[1] };
-        if (!canMove(*map, cur, nxt)) continue;
-
-        const int ni = tileIndex(nxt.x, nxt.y, w);
-        if (ni < 0 || ni >= total) continue;
-        if (dist[ni] != -1) continue;
-
-        dist[ni] = curD + 1;
-        q.push_back(nxt);
-      }
-    }
-
-    cachedW = w;
-    cachedH = h;
-    cachedTilemap = tilemap;
-    cachedPlayerTile = playerTile;
-  }
-
-  constexpr int kDirs[8][2] = {
-    { -1,  0 }, {  1,  0 }, { 0, -1 }, { 0,  1 },
-    { -1, -1 }, {  1, -1 }, { 1,  1 }, { -1, 1 }
+  const sf::Vector2i kDirs8[8] = {
+    { 1,  0}, {-1,  0}, { 0,  1}, { 0, -1},
+    { 1,  1}, { 1, -1}, {-1,  1}, {-1, -1}
   };
 
-  for (const auto& e : ents)
+  struct NeedPath
+  {
+    Entity e = INVALID_ENTITY;
+    PositionComponent* pos = nullptr;
+    VelocityComponent* vel = nullptr;
+    const SpeedComponent* speed = nullptr;
+  };
+
+  std::vector<NeedPath> needPathEnemies;
+  needPathEnemies.reserve(64);
+
+  bool needDistanceField = false;
+
+  for (const auto& e : registry.entities())
   {
     if (!registry.hasComponent<EnemyTag>(e)) continue;
 
     auto* vel = registry.getComponent<VelocityComponent>(e);
+    auto* pos = registry.getComponent<PositionComponent>(e);
     const auto* speed = registry.getComponent<SpeedComponent>(e);
-    const auto* pos = registry.getComponent<PositionComponent>(e);
-    if (!vel || !speed || !pos) continue;
+    auto* enemyComp = registry.getComponent<EnemyComponent>(e);
 
-    const sf::Vector2i enemyTileI = map->worldToTile(pos->position);
-    const TilePos enemyTile{ enemyTileI.x, enemyTileI.y };
-    if (!isPassable(*map, enemyTile.x, enemyTile.y))
+    if (!vel || !pos || !speed || !enemyComp) continue;
+
+    const sf::Vector2f toPlayer = playerPos->position - pos->position;
+    const float distWorld = std::hypot(toPlayer.x, toPlayer.y);
+
+    const float visionRangeWorld = enemyComp->visionRangeTiles * g.tileSize;
+
+    const bool withinVisionRange = std::isfinite(distWorld) && distWorld <= visionRangeWorld;
+
+    const sf::Vector2i enemyTile = tilemap->worldToTile(pos->position);
+    const bool losNow = g.inBounds(enemyTile.x, enemyTile.y) && hasLineOfSight(g, enemyTile, playerTile);
+
+    bool seesPlayerNow = false;
+    if (withinVisionRange && losNow)
     {
-      vel->velocity = { 0.f, 0.f };
+      const sf::Vector2f toPlayerDir = normalizedOrZero(toPlayer);
+      seesPlayerNow = passesFovCone(registry, e, *enemyComp, toPlayerDir);
+    }
+
+    if (!enemyComp->hasSeenPlayer && seesPlayerNow)
+    {
+      enemyComp->hasSeenPlayer = true;
+    }
+
+    if (!enemyComp->hasSeenPlayer)
+    {
+      vel->velocity = {0.f, 0.f};
       continue;
     }
 
-    const int enemyIdx = tileIndex(enemyTile.x, enemyTile.y, w);
-    if (enemyIdx < 0 || enemyIdx >= total)
+    if (losNow)
     {
-      vel->velocity = { 0.f, 0.f };
-      continue;
-    }
-
-    const int d0 = dist[enemyIdx];
-    if (d0 <= 0)
-    {
-      vel->velocity = { 0.f, 0.f };
-      continue;
-    }
-
-    TilePos bestNext = enemyTile;
-    int bestDist = d0;
-
-    for (const auto& d : kDirs)
-    {
-      const TilePos nxt{ enemyTile.x + d[0], enemyTile.y + d[1] };
-      if (!canMove(*map, enemyTile, nxt)) continue;
-
-      const int ni = tileIndex(nxt.x, nxt.y, w);
-      if (ni < 0 || ni >= total) continue;
-
-      const int dn = dist[ni];
-      if (dn == -1) continue;
-      if (dn >= bestDist) continue;
-
-      if (occupied.contains(ni) && ni != enemyIdx) continue;
-
-      bestDist = dn;
-      bestNext = nxt;
-    }
-
-    if (bestNext == enemyTile)
-    {
-      for (const auto& d : kDirs)
+      const sf::Vector2f dir = normalizedOrZero(toPlayer);
+      if (dir.x == 0.f && dir.y == 0.f)
       {
-        const TilePos nxt{ enemyTile.x + d[0], enemyTile.y + d[1] };
-        if (!canMove(*map, enemyTile, nxt)) continue;
+        vel->velocity = {0.f, 0.f};
+        continue;
+      }
 
-        const int ni = tileIndex(nxt.x, nxt.y, w);
-        if (ni < 0 || ni >= total) continue;
-        const int dn = dist[ni];
-        if (dn == -1) continue;
-        if (dn >= bestDist) continue;
+      const float v = speed->speed * vel->velocityMultiplier;
+      vel->velocity = { dir.x * v, dir.y * v };
+      continue;
+    }
 
-        bestDist = dn;
-        bestNext = nxt;
+    needDistanceField = true;
+    needPathEnemies.push_back(NeedPath{ e, pos, vel, speed });
+  }
+
+  if (!needDistanceField) return;
+
+  std::vector dist(static_cast<std::size_t>(g.w) * static_cast<std::size_t>(g.h), -1);
+
+  if (!g.blocked(playerTile.x, playerTile.y))
+  {
+    std::queue<sf::Vector2i> q;
+    dist[g.idx(playerTile.x, playerTile.y)] = 0;
+    q.push(playerTile);
+
+    while (!q.empty())
+    {
+      const sf::Vector2i cur = q.front();
+      q.pop();
+
+      const int curD = dist[g.idx(cur.x, cur.y)];
+
+      for (const auto d : kDirs8)
+      {
+        const int nx = cur.x + d.x;
+        const int ny = cur.y + d.y;
+
+        if (!g.inBounds(nx, ny)) continue;
+        if (g.blocked(nx, ny)) continue;
+
+        if (d.x != 0 && d.y != 0)
+        {
+          if (g.blocked(cur.x + d.x, cur.y) || g.blocked(cur.x, cur.y + d.y)) continue;
+        }
+
+        const int nIndex = g.idx(nx, ny);
+        if (dist[nIndex] != -1) continue;
+
+        dist[nIndex] = curD + 1;
+        q.emplace(nx, ny);
       }
     }
+  }
 
-    const sf::Vector2f target = tileCenterWorld(*map, bestNext.x, bestNext.y);
-    const sf::Vector2f delta = target - pos->position;
+  std::unordered_set<int> occupied;
+  occupied.reserve(registry.entities().size());
 
-    if (lengthSq(delta) <= (map->tileSize * 0.05f) * (map->tileSize * 0.05f))
+  for (const auto& e : registry.entities())
+  {
+    if (!registry.hasComponent<EnemyTag>(e)) continue;
+
+    const auto* pos = registry.getComponent<PositionComponent>(e);
+    const auto* enemyComp = registry.getComponent<EnemyComponent>(e);
+    if (!pos || !enemyComp) continue;
+
+    if (!enemyComp->hasSeenPlayer) continue;
+
+    const sf::Vector2i t = tilemap->worldToTile(pos->position);
+    if (!g.inBounds(t.x, t.y)) continue;
+
+    occupied.insert(g.idx(t.x, t.y));
+  }
+
+  for (const auto& item : needPathEnemies)
+  {
+    const sf::Vector2i curTile = tilemap->worldToTile(item.pos->position);
+    if (!g.inBounds(curTile.x, curTile.y))
     {
-      vel->velocity = { 0.f, 0.f };
+      item.vel->velocity = {0.f, 0.f};
       continue;
     }
 
-    const float len = std::hypot(delta.x, delta.y);
-    if (!std::isfinite(len) || len <= SMALL_EPSILON)
+    const int curIndex = g.idx(curTile.x, curTile.y);
+    const int curDist = dist[curIndex];
+
+    if (curDist <= 0)
     {
-      vel->velocity = { 0.f, 0.f };
+      item.vel->velocity = {0.f, 0.f};
       continue;
     }
 
-    const float inv = 1.f / len;
-    const sf::Vector2f dir{ delta.x * inv, delta.y * inv };
-    const float v = speed->speed * vel->velocityMultiplier;
-    vel->velocity = { dir.x * v, dir.y * v };
+    sf::Vector2i nextTile = curTile;
+    int bestDist = curDist;
+
+    for (const auto d : kDirs8)
+    {
+      const int nx = curTile.x + d.x;
+      const int ny = curTile.y + d.y;
+
+      if (!g.inBounds(nx, ny)) continue;
+      if (g.blocked(nx, ny)) continue;
+
+      if (d.x != 0 && d.y != 0)
+      {
+        if (g.blocked(curTile.x + d.x, curTile.y) || g.blocked(curTile.x, curTile.y + d.y)) continue;
+      }
+
+      const int nIndex = g.idx(nx, ny);
+      const int nd = dist[nIndex];
+
+      if (nd < 0) continue;
+      if (nd >= bestDist) continue;
+
+      if (!(nx == playerTile.x && ny == playerTile.y))
+      {
+        if (occupied.contains(nIndex) && nIndex != curIndex) continue;
+      }
+
+      bestDist = nd;
+      nextTile = {nx, ny};
+    }
+
+    if (nextTile == curTile)
+    {
+      item.vel->velocity = {0.f, 0.f};
+      continue;
+    }
+
+    const sf::Vector2f target = g.tileCenterWorld(nextTile.x, nextTile.y);
+    const sf::Vector2f dir = normalizedOrZero(target - item.pos->position);
+
+    if (dir.x == 0.f && dir.y == 0.f)
+    {
+      item.vel->velocity = {0.f, 0.f};
+      continue;
+    }
+
+    const float v = item.speed->speed * item.vel->velocityMultiplier;
+    item.vel->velocity = { dir.x * v, dir.y * v };
   }
 }
