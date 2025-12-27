@@ -13,7 +13,7 @@ namespace ecs
   class InputSystem
   {
   public:
-    static void update(Registry& registry, const Configuration &config);
+    static void update(Registry& registry, const Configuration& config, float deltaTime, float mouseDeltaX);
   };
 }
 

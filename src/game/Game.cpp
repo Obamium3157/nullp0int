@@ -55,6 +55,45 @@ namespace
     return {x, y, w, h};
   }
 
+  void setMouseCaptured(sf::RenderWindow& window, const bool captured)
+  {
+    window.setMouseCursorVisible(!captured);
+    window.setMouseCursorGrabbed(captured);
+  }
+
+  [[nodiscard]] sf::Vector2i windowCenterPx(const sf::RenderWindow& window)
+  {
+    const auto sz = window.getSize();
+    return { static_cast<int>(sz.x / 2u), static_cast<int>(sz.y / 2u) };
+  }
+
+  [[nodiscard]] float consumeMouseDeltaX(const sf::RenderWindow& window, const bool captureNow)
+  {
+    static bool s_prevCapture = false;
+
+    if (!captureNow)
+    {
+      s_prevCapture = false;
+      return 0.f;
+    }
+
+    const sf::Vector2i center = windowCenterPx(window);
+
+    if (!s_prevCapture)
+    {
+      sf::Mouse::setPosition(center, window);
+      s_prevCapture = true;
+      return 0.f;
+    }
+
+    const sf::Vector2i pos = sf::Mouse::getPosition(window);
+    const int dx = pos.x - center.x;
+
+    sf::Mouse::setPosition(center, window);
+
+    return static_cast<float>(dx);
+  }
+
   void drawButton(sf::RenderWindow& window, const sf::Font& font, const UIButton& b, const bool fontLoaded)
   {
     const sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
@@ -128,6 +167,8 @@ void Game::init()
 {
   m_uiFontLoaded = loadUiFont(m_uiFont);
   setState(GlobalState::MainMenu);
+
+  setMouseCaptured(m_window, false);
 }
 
 void Game::setState(const GlobalState next)
@@ -378,12 +419,24 @@ void Game::handleEvents()
 
 void Game::update(const float dt)
 {
+  const float dtSafe = std::max(0.f, dt);
+
+  const bool captureMouse = (m_state == GlobalState::Playing) && m_window.hasFocus();
+
+  static bool s_captureApplied = false;
+  if (captureMouse != s_captureApplied)
+  {
+    setMouseCaptured(m_window, captureMouse);
+    s_captureApplied = captureMouse;
+  }
+
+  const float mouseDx = consumeMouseDeltaX(m_window, captureMouse);
+
   if (m_state != GlobalState::Playing) return;
 
-  const float dtSafe = std::max(0.f, dt);
   m_worldTimeSeconds += dtSafe;
 
-  ecs::InputSystem::update(m_registry, m_config);
+  ecs::InputSystem::update(m_registry, m_config, dtSafe, mouseDx);
   ecs::PathfindingSystem::update(m_registry, m_tilemap, dtSafe);
   ecs::AnimationSystem::update(m_registry, dtSafe);
   ecs::PhysicsSystem::update(m_registry, dtSafe, m_tilemap);

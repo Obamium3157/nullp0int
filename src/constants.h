@@ -21,6 +21,7 @@ constexpr char     END_MARKER                         = '>';
 constexpr char     MELEE_ENEMY_SPAWN_MARKER           = '&';
 constexpr char     RANGE_ENEMY_SPAWN_MARKER           = '9';
 constexpr char     SUPPORT_ENEMY_SPAWN_MARKER         = '@';
+constexpr float    MOUSE_DEG_PER_PIXEL                = 0.12f;
 
 
 #endif //NULLP0INT_CONSTANTS_H

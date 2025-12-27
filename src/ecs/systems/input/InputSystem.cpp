@@ -11,31 +11,34 @@
 #include "../../../constants.h"
 #include "../../../math/mathUtils.h"
 
-void ecs::InputSystem::update(Registry &registry, const Configuration &config)
+
+void ecs::InputSystem::update(Registry& registry, const Configuration& config, const float deltaTime, const float mouseDeltaX)
 {
-  for (const auto &ents = registry.entities(); const auto &e: ents)
+  for (const auto& ents = registry.entities(); const auto& e : ents)
   {
     if (!registry.hasComponent<PlayerInput>(e)) continue;
 
     const auto* input = registry.getComponent<PlayerInput>(e);
     const auto* rotationComp = registry.getComponent<RotationComponent>(e);
-    const auto* rotationSpeedComp = registry.getComponent<RotationSpeedComponent>(e);
+
     auto* velocityComp = registry.getComponent<VelocityComponent>(e);
     auto* rotationVelocityComp = registry.getComponent<RotationVelocityComponent>(e);
-    if (!input || !rotationComp || !rotationSpeedComp || !velocityComp || !rotationVelocityComp) continue;
 
-    velocityComp->velocity.x = 0.f;
-    velocityComp->velocity.y = 0.f;
+    if (!input || !rotationComp || !velocityComp || !rotationVelocityComp) continue;
+
+    velocityComp->velocity = {};
     rotationVelocityComp->rotationVelocity = 0.f;
 
-    const float moveSpeed = input->moveSpeed;
-    const float rotationSpeed = rotationSpeedComp->rotationSpeed;
+    if (deltaTime > SMALL_EPSILON)
+    {
+      const float desiredDeltaAngle = mouseDeltaX * MOUSE_DEG_PER_PIXEL;
+      rotationVelocityComp->rotationVelocity = desiredDeltaAngle / deltaTime;
+    }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) rotationVelocityComp->rotationVelocity -= rotationSpeed;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) rotationVelocityComp->rotationVelocity += rotationSpeed;
+    const float moveSpeed = input->moveSpeed;
 
     const float rad = radiansFromDegrees(rotationComp->angle);
-    const sf::Vector2f forward = { std::cos(rad), std::sin(rad) };
+    const sf::Vector2f forward{ std::cos(rad), std::sin(rad) };
     const sf::Vector2f right{ forward.y * -1.f, forward.x };
 
     float moveForward = 0.f;
@@ -59,6 +62,8 @@ void ecs::InputSystem::update(Registry &registry, const Configuration &config)
     {
       velocityComp->velocity = {};
     }
-    velocityComp->velocityMultiplier = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? config.player_velocity_multiplier : 1.f;
+
+    velocityComp->velocityMultiplier =
+      (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? config.player_velocity_multiplier : 1.f;
   }
 }
