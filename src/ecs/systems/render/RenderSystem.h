@@ -31,6 +31,7 @@ namespace ecs
     static void renderWalls(Registry &registry, Configuration config, const Entity& tilemapEntity, float playerAngle, const RayCastResultComponent& rayResults, float globalTime, const TextureManager& textureManager, std::vector<RenderItem>& items);
     static void drawSolidColumn(sf::RenderWindow& window, float x, float y, float width, float height, float depth, float maxAttenuationDist);
     static void renderEnemies(Registry &registry, const Configuration &config, const TextureManager &textureManager, std::vector<RenderItem>& items);
+    static void renderProjectiles(Registry &registry, const Configuration &config, const TextureManager &textureManager, std::vector<RenderItem>& items);
   };
 }
 

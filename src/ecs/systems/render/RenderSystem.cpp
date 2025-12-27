@@ -54,6 +54,7 @@ void RenderSystem::render(Registry &registry, const Configuration &config, sf::R
 
   renderWalls(registry, config, m_tilemap, rotComp->angle, *rayResults, globalTime, textureManager, items);
   renderEnemies(registry, config, textureManager, items);
+  renderProjectiles(registry, config, textureManager, items);
 
   std::ranges::sort(
     items, [](const RenderItem& a, const RenderItem& b){
@@ -577,5 +578,128 @@ void RenderSystem::renderEnemies(Registry &registry, const Configuration &config
         }
       }
     }
+  }
+}
+
+
+
+void RenderSystem::renderProjectiles(Registry &registry, const Configuration &config, const TextureManager &textureManager, std::vector<RenderItem>& items)
+{
+  Entity player = INVALID_ENTITY;
+  for (const auto &e : registry.entities())
+  {
+    if (registry.hasComponent<PlayerTag>(e))
+    {
+      player = e;
+      break;
+    }
+  }
+  if (player == INVALID_ENTITY) return;
+
+  const auto* posComp = registry.getComponent<PositionComponent>(player);
+  const auto* rotComp = registry.getComponent<RotationComponent>(player);
+  const auto* rayResults = registry.getComponent<RayCastResultComponent>(player);
+  if (!posComp || !rotComp || !rayResults) return;
+  if (rayResults->hits.empty()) return;
+
+  const int amount_of_rays = static_cast<int>(rayResults->hits.size());
+  const float fov = config.fov;
+  const float halfFov = fov * 0.5f;
+  const float deltaAngle = fov / static_cast<float>(amount_of_rays);
+  constexpr auto windowW = static_cast<float>(SCREEN_WIDTH);
+  constexpr auto windowH = static_cast<float>(SCREEN_HEIGHT);
+  const float screenDist = (windowW * 0.5f) / std::tan(halfFov);
+  const float columnWidth = windowW / static_cast<float>(amount_of_rays);
+
+  struct ProjEntry { Entity e; float dist; const PositionComponent* pos; const ProjectileComponent* comp; };
+  std::vector<ProjEntry> projs;
+  projs.reserve(64);
+
+  for (const auto &ent : registry.entities())
+  {
+    if (!registry.hasComponent<ProjectileTag>(ent)) continue;
+    const auto* ppos = registry.getComponent<PositionComponent>(ent);
+    const auto* pc = registry.getComponent<ProjectileComponent>(ent);
+    if (!ppos || !pc) continue;
+
+    const float dx = ppos->position.x - posComp->position.x;
+    const float dy = ppos->position.y - posComp->position.y;
+    const float dist = std::hypot(dx, dy);
+    if (!std::isfinite(dist) || dist <= 0.f) continue;
+
+    projs.push_back(ProjEntry{ent, dist, ppos, pc});
+  }
+
+  if (projs.empty()) return;
+
+  std::ranges::sort(projs, [](const ProjEntry& a, const ProjEntry& b){ return a.dist > b.dist; });
+
+  const double playerAngleRad = radiansFromDegrees(rotComp->angle);
+
+  std::unordered_map<std::string, const sf::Texture*> textureCache;
+
+  for (const auto &entry : projs)
+  {
+    const auto* ppos = entry.pos;
+    const auto* pc = entry.comp;
+
+    if (pc->textureId.empty()) continue;
+
+    const float dx = ppos->position.x - posComp->position.x;
+    const float dy = ppos->position.y - posComp->position.y;
+    const float projDist = entry.dist;
+
+    double angleTo = std::atan2(static_cast<double>(dy), static_cast<double>(dx));
+    double delta = angleTo - playerAngleRad;
+    while (delta > M_PI) delta -= 2.0 * M_PI;
+    while (delta < -M_PI) delta += 2.0 * M_PI;
+
+    if (std::abs(delta) > static_cast<double>(halfFov)) continue;
+
+    int centerRay = static_cast<int>(std::floor((delta + static_cast<double>(halfFov)) / static_cast<double>(deltaAngle)));
+    centerRay = std::clamp(centerRay, 0, amount_of_rays - 1);
+
+    const auto &hit = rayResults->hits[centerRay];
+    if (hit.distance <= 0.f || !std::isfinite(hit.distance)) continue;
+
+    if (projDist + SMALL_EPSILON >= hit.distance) continue;
+
+    const auto normDist = static_cast<float>(projDist * std::cos(delta));
+    if (normDist <= SMALL_EPSILON) continue;
+
+    const float projTileSize = config.tile_size * std::max(0.05f, pc->visualSizeTiles);
+    const float projHeight = screenDist * projTileSize / (normDist + SMALL_EPSILON);
+    const float projWidth  = projHeight;
+
+    const float screenX = ((static_cast<float>((delta + halfFov) / deltaAngle)) * columnWidth);
+    const float spriteX = screenX - (projWidth * 0.5f);
+    const float spriteY = (windowH * 0.5f) - (projHeight * 0.5f) + (projHeight * pc->heightShift);
+
+    const sf::Texture* tex = nullptr;
+    if (auto it = textureCache.find(pc->textureId); it != textureCache.end()) tex = it->second;
+    else { tex = textureManager.get(pc->textureId); textureCache[pc->textureId] = tex; }
+
+    if (!tex) continue;
+
+    sf::Sprite sprite(*tex);
+
+    const float texW = static_cast<float>(std::max(1u, tex->getSize().x));
+    const float texH = static_cast<float>(std::max(1u, tex->getSize().y));
+
+    const float scaleX = (projWidth / texW) * pc->spriteScale;
+    const float scaleY = (projHeight / texH) * pc->spriteScale;
+
+    sprite.setScale(scaleX, scaleY);
+    sprite.setPosition(spriteX, spriteY);
+
+    const float maxAttenuation = config.attenuation_distance * config.tile_size;
+    const float brightness = 1.f - std::min(normDist / maxAttenuation, 1.f);
+    const uint8_t bright = static_cast<uint8_t>(std::clamp(brightness * 255.f, 40.f, 255.f));
+    sprite.setColor(sf::Color(bright, bright, bright));
+
+    RenderItem it;
+    it.depth = normDist;
+    it.sprite = sprite;
+    items.push_back(std::move(it));
   }
 }

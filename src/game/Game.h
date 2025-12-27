@@ -73,6 +73,7 @@ private:
   [[nodiscard]] std::vector<UIButton> buildButtonsForState(GlobalState state) const;
   void drawMenu(const std::string& title, const std::vector<UIButton>& buttons, bool darkenBackground);
   void drawHud();
+  void drawWeaponView();
   void setState(GlobalState next);
 
   void onMenuButtonPressed(std::size_t buttonIndex);

@@ -22,9 +22,11 @@
 #include "../ecs/systems/map_generation/MapGenerationSystem.h"
 #include "../ecs/systems/npc/PathfindingSystem.h"
 #include "../ecs/systems/physics/PhysicsSystem.h"
+#include "../ecs/systems/projectile/ProjectileSystem.h"
 #include "../ecs/systems/render/AnimationSystem.h"
 #include "../ecs/systems/render/RayCasting.h"
 #include "../ecs/systems/render/RenderSystem.h"
+#include "../ecs/systems/weapon/WeaponSystem.h"
 
 namespace
 {
@@ -227,6 +229,21 @@ void Game::init_textures()
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
   m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
+
+
+  m_textureManager.load("pistol_idle", "resources/assets/PISGA0.png");
+  m_textureManager.load("pistol_fire_0", "resources/assets/PISGB0.png");
+  m_textureManager.load("pistol_fire_1", "resources/assets/PISGC0.png");
+  m_textureManager.load("pistol_fire_2", "resources/assets/PISGD0.png");
+  m_textureManager.load("pistol_fire_3", "resources/assets/PISGE0.png");
+
+  m_textureManager.load("shotgun_idle", "resources/assets/SHTGA0.png");
+  m_textureManager.load("shotgun_fire_0", "resources/assets/SHTGA0.png");
+  m_textureManager.load("shotgun_fire_1", "resources/assets/SHTGB0.png");
+  m_textureManager.load("shotgun_fire_2", "resources/assets/SHTGC0.png");
+  m_textureManager.load("shotgun_fire_3", "resources/assets/SHTGA0.png");
+
+  m_textureManager.load("shotgun_projectile", "resources/assets/BAL1A0.png");
 
   m_textureManager.load("melee_walk_1", "resources/assets/BOSSA1.png");
   m_textureManager.load("melee_walk_2", "resources/assets/BOSSC1.png");
@@ -441,6 +458,8 @@ void Game::update(const float dt)
   ecs::AnimationSystem::update(m_registry, dtSafe);
   ecs::PhysicsSystem::update(m_registry, dtSafe, m_tilemap);
   ecs::RayCasting::rayCast(m_registry, m_config, m_player);
+  ecs::WeaponSystem::update(m_registry, m_config, m_tilemap, m_player, dtSafe);
+  ecs::ProjectileSystem::update(m_registry, m_config, m_tilemap, dtSafe);
 
   if (m_player != ecs::INVALID_ENTITY)
   {
@@ -472,8 +491,71 @@ void Game::drawHud()
   const int mx  = static_cast<int>(std::round(hp->max));
 
   text.setString(toSfStringUtf8("HP: " + std::to_string(cur) + "/" + std::to_string(mx)));
-  text.setPosition(18.f, 14.f);
+  const auto      bounds  = text.getLocalBounds();
+  constexpr float marginX = 18.f;
+  constexpr float marginY = 14.f;
+  const float     y       = static_cast<float>(m_window.getSize().y) - (bounds.top + bounds.height) - marginY;
+  text.setPosition(marginX, y);
   m_window.draw(text);
+}
+
+
+void Game::drawWeaponView()
+{
+  if (m_player == ecs::INVALID_ENTITY) return;
+  if (!m_registry.isAlive(m_player)) return;
+
+  const auto* inv = m_registry.getComponent<ecs::WeaponInventoryComponent>(m_player);
+  if (!inv) return;
+  if (inv->slots.empty()) return;
+
+  const int activeIndex = std::clamp(inv->activeIndex, 0, static_cast<int>(inv->slots.size()) - 1);
+  const auto& slot = inv->slots[static_cast<std::size_t>(activeIndex)];
+  if (!slot.weapon) return;
+
+  std::string texId;
+
+  if (slot.firing)
+  {
+    const auto& fireFrames = slot.weapon->viewFireFrames();
+    if (!fireFrames.empty())
+    {
+      const std::size_t idx = std::min(slot.animFrame, fireFrames.size() - 1u);
+      texId = fireFrames[idx];
+    }
+  }
+
+  if (texId.empty())
+  {
+    const auto& idle = slot.weapon->viewIdleFrames();
+    texId = (!idle.empty()) ? idle.front() : std::string{};
+  }
+
+  if (texId.empty()) return;
+
+  const sf::Texture* tex = m_textureManager.get(texId);
+  if (!tex) return;
+
+  sf::Sprite spr;
+  spr.setTexture(*tex);
+
+  const auto ws = m_window.getSize();
+  const auto tsz = tex->getSize();
+  if (tsz.x == 0u || tsz.y == 0u) return;
+
+  const float targetHeight = static_cast<float>(ws.y) * 0.42f;
+  const float scale = targetHeight / static_cast<float>(tsz.y);
+  spr.setScale(scale, scale);
+
+  const float w = static_cast<float>(tsz.x) * scale;
+  const float h = static_cast<float>(tsz.y) * scale;
+
+  const float x = (static_cast<float>(ws.x) - w) * 0.5f;
+  const float y = static_cast<float>(ws.y) - h;
+
+  spr.setPosition(x, y);
+
+  m_window.draw(spr);
 }
 
 void Game::drawMenu(const std::string& title, const std::vector<UIButton>& buttons, const bool darkenBackground)
@@ -508,6 +590,7 @@ void Game::render()
 
     if (m_state == GlobalState::Playing || m_state == GlobalState::Paused)
     {
+      drawWeaponView();
       drawHud();
     }
   }

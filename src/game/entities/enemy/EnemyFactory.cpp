@@ -47,6 +47,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
   registry.addComponent<ecs::EnemyTag>(enemy, ecs::EnemyTag{});
 
   float speed;
+  float maxHp = 40.f;
 
   ecs::EnemyComponent ec;
   ec.cls = cls;
@@ -76,6 +77,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
       ec.attackFrameTime = 0.13f;
 
       speed = 375.f;
+      maxHp = 45.f;
       break;
     case ecs::EnemyClass::RANGE:
       ec.textureId = "range_walk_1";
@@ -85,6 +87,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
       ec.attackFrameTime = 0.16f;
 
       speed = 500.f;
+      maxHp = 35.f;
       break;
     case ecs::EnemyClass::SUPPORT:
       ec.textureId = "support_walk_1";
@@ -94,10 +97,12 @@ ecs::Entity initEnemy(ecs::Registry& registry,
       ec.attackFrameTime = 0.16f;
 
       speed = 200.f;
+      maxHp = 60.f;
       break;
   }
 
   registry.addComponent<ecs::SpeedComponent>(enemy, ecs::SpeedComponent{speed});
+  registry.addComponent<ecs::HealthComponent>(enemy, ecs::HealthComponent{maxHp, maxHp});
 
   registry.addComponent<ecs::EnemyComponent>(enemy, ec);
 

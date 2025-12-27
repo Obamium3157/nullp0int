@@ -16,6 +16,7 @@ void ecs::PhysicsSystem::update(Registry& registry, const float deltaTime, const
 
   for (const auto &ents = registry.entities(); const auto &e : ents)
   {
+    if (registry.hasComponent<ProjectileTag>(e)) continue;
     if (!registry.hasComponent<PositionComponent>(e) || !registry.hasComponent<VelocityComponent>(e))
     {
       continue;

@@ -61,6 +61,8 @@ bool ecs::CollisionSystem::checkEntityCollision(Registry &registry, const sf::Ve
   {
     if (e == self) continue;
 
+    if (registry.hasComponent<ProjectileTag>(e)) continue;
+
     const auto* otherPos = registry.getComponent<PositionComponent>(e);
     const auto* otherRadius = registry.getComponent<RadiusComponent>(e);
 

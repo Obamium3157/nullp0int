@@ -12,6 +12,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include "../constants.h"
+#include "../game/weapons/PistolWeapon.h"
 #include "systems/render/Animation.h"
 
 namespace ecs
@@ -213,6 +214,54 @@ namespace ecs
     std::size_t currentFrame = 0;
     float frameAccumulator = 0.f;
   };
+
+  struct ProjectileTag {};
+
+  struct ProjectileComponent
+  {
+    Entity owner = INVALID_ENTITY;
+
+    sf::Vector2f positionPrev{};
+    sf::Vector2f direction{1.f, 0.f};
+
+    float speed = 2500.f;
+    float damage = 50.f;
+
+    float radius = 5.f;
+    float lifeSeconds = 2.0f;
+    float livedSeconds = 0.f;
+
+    std::string textureId{};
+    float spriteScale = 1.f;
+    float heightShift = 0.12f;
+    float visualSizeTiles = 0.25f;
+
+    float ignoreOwnerSeconds = 0.04f;
+  };
+
+  struct PlayerWeaponInputState
+  {
+    bool prevFire = false;
+    bool prevNum2 = false;
+    bool prevNum3 = false;
+  };
+
+  struct WeaponSlotRuntime
+  {
+    std::shared_ptr<game::weapons::IWeapon> weapon{};
+    float cooldownRemaining = 0.f;
+    bool firing = false;
+
+    std::size_t animFrame = 0;
+    float animAccumulator = 0.f;
+  };
+
+  struct WeaponInventoryComponent
+  {
+    std::vector<WeaponSlotRuntime> slots;
+    int activeIndex = 0;
+  };
+
 }
 
 #endif //NULLP0INT_COMPONENTS_H

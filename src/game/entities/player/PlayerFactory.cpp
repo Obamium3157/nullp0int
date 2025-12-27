@@ -6,6 +6,9 @@
 
 #include "../../../ecs/Components.h"
 
+#include "../../weapons/PistolWeapon.h"
+#include "../../weapons/ShotgunWeapon.h"
+
 ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, const float radius, const float speed, const float rotationSpeed)
 {
   const ecs::Entity player = registry.createEntity();
@@ -19,6 +22,15 @@ ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, c
   registry.addComponent<ecs::PlayerTag>(player, ecs::PlayerTag{});
   registry.addComponent<ecs::PlayerInput>(player, ecs::PlayerInput{});
   registry.addComponent<ecs::HealthComponent>(player, ecs::HealthComponent{100.f, 100.f});
+
+
+  ecs::WeaponInventoryComponent inv;
+  inv.slots.push_back(ecs::WeaponSlotRuntime{std::make_shared<game::weapons::PistolWeapon>()});
+  inv.slots.push_back(ecs::WeaponSlotRuntime{std::make_shared<game::weapons::ShotgunWeapon>()});
+  inv.activeIndex = 0;
+
+  registry.addComponent<ecs::WeaponInventoryComponent>(player, inv);
+  registry.addComponent<ecs::PlayerWeaponInputState>(player, ecs::PlayerWeaponInputState{});
 
   return player;
 }
