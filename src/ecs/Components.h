@@ -50,6 +50,12 @@ namespace ecs
     float radius = 0.f;
   };
 
+  struct HealthComponent
+  {
+    float current = 100.f;
+    float max = 100.f;
+  };
+
   struct PlayerTag{};
   struct PlayerInput
   {
@@ -63,6 +69,13 @@ namespace ecs
     SUPPORT,
   };
 
+  enum class EnemyState
+  {
+    PASSIVE,
+    MOVING,
+    ATTACKING,
+  };
+
   struct EnemyComponent
   {
     EnemyClass cls = EnemyClass::MELEE;
@@ -73,6 +86,28 @@ namespace ecs
     bool hasSeenPlayer = false;
     float visionRangeTiles = 40.f;
     float fovDegrees = 360.f;
+
+    EnemyState state = EnemyState::PASSIVE;
+
+    float meleeAttackRangeTiles = 1.15f;
+    float meleeAttackDamage = 10.f;
+
+    float rangedPreferredRangeTiles = 10.f;
+    float rangedRangeToleranceTiles = 2.f;
+    float rangedAttackRangeTiles = 18.f;
+    float rangedAttackDamage = 6.f;
+
+    float attackCooldownSeconds = 0.f;
+    float cooldownRemainingSeconds = 0.f;
+
+    bool attackDamageApplied = false;
+    std::size_t attackApplyFrame = 0;
+
+    std::vector<std::string> idleFrames;
+    std::vector<std::string> walkFrames;
+    std::vector<std::string> attackFrames;
+    float walkFrameTime = 0.09f;
+    float attackFrameTime = 0.07f;
   };
   struct EnemyTag{};
 

@@ -35,50 +35,82 @@ namespace
   }
 }
 
-ecs::Entity initEnemy(ecs::Registry &registry, const ecs::EnemyClass cls, const sf::Vector2f initialPos, const float radius, const float speed)
+ecs::Entity initEnemy(ecs::Registry& registry,
+                     const ecs::EnemyClass cls,
+                     const sf::Vector2f initialPos,
+                     const float radius)
 {
   const ecs::Entity enemy = registry.createEntity();
   registry.addComponent<ecs::PositionComponent>(enemy, ecs::PositionComponent{initialPos});
   registry.addComponent<ecs::RadiusComponent>(enemy, ecs::RadiusComponent{radius});
   registry.addComponent<ecs::VelocityComponent>(enemy, ecs::VelocityComponent{});
-  registry.addComponent<ecs::SpeedComponent>(enemy, ecs::SpeedComponent{speed});
-
+  // registry.addComponent<ecs::SpeedComponent>(enemy, ecs::SpeedComponent{speed});
   registry.addComponent<ecs::EnemyTag>(enemy, ecs::EnemyTag{});
 
-  std::string textureType;
+  float speed;
+
+  ecs::EnemyComponent ec;
+  ec.cls = cls;
+  ec.spriteScale = 1.0f;
+  ec.heightShift = 0.27f;
+  ec.hasSeenPlayer = false;
+  ec.state = ecs::EnemyState::PASSIVE;
+
+  ec.meleeAttackRangeTiles = 1.15f;
+  ec.meleeAttackDamage = 10.f;
+
+  ec.rangedPreferredRangeTiles = 10.f;
+  ec.rangedRangeToleranceTiles = 2.f;
+  ec.rangedAttackRangeTiles = 18.f;
+  ec.rangedAttackDamage = 6.f;
+
+  ec.attackCooldownSeconds = (cls == ecs::EnemyClass::MELEE) ? 0.f : 0.25f;
+  ec.cooldownRemainingSeconds = 0.f;
+
   switch (cls)
   {
     case ecs::EnemyClass::MELEE:
-      textureType = "melee";
+      ec.textureId = "melee_walk_1";
+      ec.walkFrames = {"melee_walk_1", "melee_walk_2"};
+      ec.attackFrames = {"melee_attack_1", "melee_attack_2", "melee_attack_3"};
+      ec.walkFrameTime = 0.3f;
+      ec.attackFrameTime = 0.13f;
+
+      speed = 375.f;
       break;
     case ecs::EnemyClass::RANGE:
-      textureType = "range";
+      ec.textureId = "range_walk_1";
+      ec.walkFrames = {"range_walk_1", "range_walk_2"};
+      ec.attackFrames = {"range_attack_1", "range_attack_2"};
+      ec.walkFrameTime = 0.3f;
+      ec.attackFrameTime = 0.16f;
+
+      speed = 500.f;
       break;
     case ecs::EnemyClass::SUPPORT:
-      textureType = "support";
+      ec.textureId = "support_walk_1";
+      ec.walkFrames = {"support_walk_1", "support_walk_2", "support_walk_3", "support_walk_4"};
+      ec.attackFrames = {"support_attack_1", "support_attack_2"};
+      ec.walkFrameTime = 0.3f;
+      ec.attackFrameTime = 0.16f;
+
+      speed = 200.f;
       break;
   }
 
-  registry.addComponent<ecs::EnemyComponent>(enemy, ecs::EnemyComponent{
-        cls,
-        textureType + "_enemy",
-        1.0f,
-        0.27f
-      });
+  registry.addComponent<ecs::SpeedComponent>(enemy, ecs::SpeedComponent{speed});
 
-  if (cls == ecs::EnemyClass::MELEE)
-  {
-    ecs::SpriteComponent sc;
-    sc.textureFrames = { "melee_enemy_1", "melee_enemy_2" };
-    sc.frameTime = 0.09f;
-    sc.playing = true;
-    sc.loop = true;
-    sc.currentFrame = 0;
-    sc.frameAccumulator = 0.f;
-    sc.textureId = sc.textureFrames.front();
+  registry.addComponent<ecs::EnemyComponent>(enemy, ec);
 
-    registry.addComponent<ecs::SpriteComponent>(enemy, sc);
-  }
+  ecs::SpriteComponent sc;
+  sc.textureFrames = ec.walkFrames;
+  sc.frameTime = ec.walkFrameTime;
+  sc.loop = true;
+  sc.playing = false;
+  sc.currentFrame = 0;
+  sc.frameAccumulator = 0.f;
+  sc.textureId = ec.textureId;
+  registry.addComponent<ecs::SpriteComponent>(enemy, sc);
 
   return enemy;
 }
@@ -89,7 +121,6 @@ void spawnEnemiesFromMap(ecs::Registry &registry, const ecs::Entity tilemapEntit
   if (!map) return;
 
   const float enemyRadius = config.player_radius;
-  const float enemySpeed  = config.player_speed * 0.5f;
 
   const int h = static_cast<int>(map->tiles.size());
   for (int y = 0; y < h; ++y)
@@ -103,7 +134,7 @@ void spawnEnemiesFromMap(ecs::Registry &registry, const ecs::Entity tilemapEntit
       if (!enemyClassFromMarker(row[static_cast<std::size_t>(x)], cls)) continue;
 
       const sf::Vector2f spawnPos = tileCenterWorld(x, y, map->tileSize);
-      (void)initEnemy(registry, cls, spawnPos, enemyRadius, enemySpeed);
+      (void)initEnemy(registry, cls, spawnPos, enemyRadius);
 
       row[static_cast<std::size_t>(x)] = FLOOR_MARKER;
     }

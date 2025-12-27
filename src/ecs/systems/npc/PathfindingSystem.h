@@ -12,7 +12,7 @@ namespace ecs
   class PathfindingSystem
   {
   public:
-    static void update(Registry& registry, Entity tilemapEntity);
+    static void update(Registry& registry, Entity tilemapEntity, float dt);
   };
 }
 

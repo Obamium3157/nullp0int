@@ -63,13 +63,28 @@ void Game::init_textures()
 
   m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
 
-  // m_textureManager.load("melee_enemy", "resources/assets/BOSSA1.png");
+  m_textureManager.load("melee_walk_1", "resources/assets/BOSSA1.png");
+  m_textureManager.load("melee_walk_2", "resources/assets/BOSSC1.png");
 
-  m_textureManager.load("melee_enemy_1", "resources/assets/BOSSA1.png");
-  m_textureManager.load("melee_enemy_2", "resources/assets/BOSSC1.png");
+  m_textureManager.load("melee_attack_1", "resources/assets/BOSSE1.png");
+  m_textureManager.load("melee_attack_2", "resources/assets/BOSSF1.png");
+  m_textureManager.load("melee_attack_3", "resources/assets/BOSSG1.png");
 
-  m_textureManager.load("range_enemy", "resources/assets/PLAYA1.png");
-  m_textureManager.load("support_enemy", "resources/assets/HEADD1.png");
+
+  m_textureManager.load("range_walk_1", "resources/assets/PLAYA1.png");
+  m_textureManager.load("range_walk_2", "resources/assets/PLAYC1.png");
+
+  m_textureManager.load("range_attack_1", "resources/assets/PLAYE1.png");
+  m_textureManager.load("range_attack_2", "resources/assets/PLAYF1.png");
+
+
+  m_textureManager.load("support_walk_1", "resources/assets/SPOSA1.png");
+  m_textureManager.load("support_walk_2", "resources/assets/SPOSB1.png");
+  m_textureManager.load("support_walk_3", "resources/assets/SPOSC1.png");
+  m_textureManager.load("support_walk_4", "resources/assets/SPOSD1.png");
+
+  m_textureManager.load("support_attack_1", "resources/assets/SPOSE1.png");
+  m_textureManager.load("support_attack_2", "resources/assets/SPOSF1.png");
 
 
   if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
@@ -94,11 +109,10 @@ void Game::init_player()
   const auto player_rotation_speed = m_config.player_rotation_speed;
 
   sf::Vector2f playerInitialPosition;
-  if (auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
+  if (const auto* tm = m_registry.getComponent<ecs::TilemapComponent>(m_tilemap))
   {
     playerInitialPosition = tm->getSpawnPosition();
   }
-
 
   m_player = initPlayer(m_registry, playerInitialPosition, player_radius, player_speed, player_rotation_speed);
 }
@@ -109,22 +123,6 @@ void Game::init()
   init_textures();
   init_player();
   spawnEnemiesFromMap(m_registry, m_tilemap, m_config);
-
-  // if (m_player != ecs::INVALID_ENTITY)
-  // {
-  //   if (auto* ppos = m_registry.getComponent<ecs::PositionComponent>(m_player))
-  //   {
-  //     constexpr float offsetTiles = 3.f;
-  //     const sf::Vector2f enemyPos = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f);
-  //     const sf::Vector2f enemyPos1 = ppos->position + sf::Vector2f(m_config.tile_size * offsetTiles, 0.f) * 2.f;
-  //
-  //     const float enemyRadius = m_config.player_radius;
-  //     const float enemySpeed = m_config.player_speed * 0.5f;
-  //
-  //     initEnemy(m_registry, ecs::EnemyClass::RANGE, enemyPos, enemyRadius, enemySpeed);
-  //     initEnemy(m_registry, ecs::EnemyClass::MELEE, enemyPos1, enemyRadius, enemySpeed);
-  //   }
-  // }
 }
 
 
@@ -143,8 +141,7 @@ void Game::handleEvents()
 void Game::update(const float dt)
 {
   ecs::InputSystem::update(m_registry, m_config);
-  ecs::PathfindingSystem::update(m_registry, m_tilemap);
-  // EnemyControllerSystem::update(m_registry);
+  ecs::PathfindingSystem::update(m_registry, m_tilemap, dt);
   ecs::AnimationSystem::update(m_registry, dt);
   ecs::PhysicsSystem::update(m_registry, dt, m_tilemap);
   ecs::RayCasting::rayCast(m_registry, m_config, m_player);
