@@ -44,7 +44,6 @@ ecs::Entity initEnemy(ecs::Registry& registry,
   registry.addComponent<ecs::PositionComponent>(enemy, ecs::PositionComponent{initialPos});
   registry.addComponent<ecs::RadiusComponent>(enemy, ecs::RadiusComponent{radius});
   registry.addComponent<ecs::VelocityComponent>(enemy, ecs::VelocityComponent{});
-  // registry.addComponent<ecs::SpeedComponent>(enemy, ecs::SpeedComponent{speed});
   registry.addComponent<ecs::EnemyTag>(enemy, ecs::EnemyTag{});
 
   float speed;
