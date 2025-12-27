@@ -57,7 +57,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
   ec.state = ecs::EnemyState::PASSIVE;
 
   ec.meleeAttackRangeTiles = 1.15f;
-  ec.meleeAttackDamage = 10.f;
+  ec.meleeAttackDamage = 25.f;
 
   ec.rangedPreferredRangeTiles = 10.f;
   ec.rangedRangeToleranceTiles = 2.f;
@@ -77,16 +77,16 @@ ecs::Entity initEnemy(ecs::Registry& registry,
       ec.attackFrameTime = 0.13f;
 
       speed = 375.f;
-      maxHp = 45.f;
+      maxHp = 75.f;
       break;
     case ecs::EnemyClass::RANGE:
       ec.textureId = "range_walk_1";
       ec.walkFrames = {"range_walk_1", "range_walk_2"};
       ec.attackFrames = {"range_attack_1", "range_attack_2"};
       ec.walkFrameTime = 0.3f;
-      ec.attackFrameTime = 0.16f;
+      ec.attackFrameTime = 0.26f;
 
-      speed = 500.f;
+      speed = 200.f;
       maxHp = 35.f;
       break;
     case ecs::EnemyClass::SUPPORT:
@@ -96,7 +96,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
       ec.walkFrameTime = 0.3f;
       ec.attackFrameTime = 0.16f;
 
-      speed = 200.f;
+      speed = 150.f;
       maxHp = 60.f;
       break;
   }
