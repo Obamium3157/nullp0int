@@ -14,6 +14,8 @@
 #include "../../Components.h"
 #include "../../Entity.h"
 
+#include "../collision/CollisionSystem.h"
+
 #include "Combat.h"
 #include "Movement.h"
 #include "PathfindingAnimation.h"
@@ -113,13 +115,55 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
       continue;
     }
 
+    if ((enemy->cls == EnemyClass::RANGE || enemy->cls == EnemyClass::SUPPORT) && enemy->rangedDodgeActive)
+    {
+      enemy->rangedDodgeTimeRemainingSeconds = std::max(0.f, enemy->rangedDodgeTimeRemainingSeconds - dtSafe);
+
+      if (const float v = speed->speed * vel->velocityMultiplier; !(v > 0.f))
+      {
+        setVelocityStop(*vel);
+        enemy->rangedDodgeActive = false;
+        enterMoving(*enemy, *sprite);
+      }
+      else
+      {
+        const sf::Vector2f dir = normalizedOrZero(enemy->rangedDodgeWorldDir);
+        const auto step = sf::Vector2f{dir.x * v, dir.y * v};
+
+        const float r = (registry.getComponent<RadiusComponent>(e) ? registry.getComponent<RadiusComponent>(e)->radius : 0.f);
+        const auto nextPos = sf::Vector2f{pos->position.x + step.x * dtSafe, pos->position.y + step.y * dtSafe};
+
+        if (CollisionSystem::checkWallCollision(registry, nextPos, r, tilemapEntity))
+        {
+          enemy->rangedDodgeActive = false;
+          enemy->rangedDodgeTimeRemainingSeconds = 0.f;
+          enemy->cooldownRemainingSeconds = 0.f;
+          setVelocityStop(*vel);
+          enterMoving(*enemy, *sprite);
+        }
+        else if (enemy->rangedDodgeTimeRemainingSeconds > 0.f)
+        {
+          vel->velocity = step;
+          continue;
+        }
+        else
+        {
+          enemy->rangedDodgeActive = false;
+          enemy->cooldownRemainingSeconds = 0.f;
+          setVelocityStop(*vel);
+          enterMoving(*enemy, *sprite);
+        }
+      }
+    }
+
     if (enemy->state != EnemyState::ATTACKING && enemy->state != EnemyState::MOVING)
     {
       enterMoving(*enemy, *sprite);
     }
 
-    if (const float enemyRadius = (registry.getComponent<RadiusComponent>(e) ? registry.getComponent<RadiusComponent>(e)->radius : 0.f);
-      updateCombat(registry, tilemapEntity, e, pos->position, enemyRadius, *enemy, *sprite, *vel, *playerHealth, perception, g.tileSize, dtSafe))
+    const float enemyRadius = (registry.getComponent<RadiusComponent>(e) ? registry.getComponent<RadiusComponent>(e)->radius : 0.f);
+
+    if (updateCombat(registry, tilemapEntity, e, pos->position, enemyRadius, *enemy, *sprite, *vel, *playerHealth, perception, g.tileSize, dtSafe))
     {
       continue;
     }

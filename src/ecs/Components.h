@@ -8,8 +8,12 @@
 #define NULLP0INT_COMPONENTS_H
 
 #include <cmath>
+#include <string>
 #include <unordered_map>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <vector>
+
+#include <SFML/Graphics/Rect.hpp>
+#include <SFML/System/Vector2.hpp>
 
 #include "../constants.h"
 #include "../game/weapons/PistolWeapon.h"
@@ -106,12 +110,21 @@ namespace ecs
 
     std::vector<std::string> idleFrames;
     std::vector<std::string> walkFrames;
+    std::vector<std::string> walkFramesLeft;
+    std::vector<std::string> walkFramesRight;
+    std::vector<std::string> walkFramesBack;
     std::vector<std::string> attackFrames;
     float walkFrameTime = 0.09f;
     float attackFrameTime = 0.07f;
 
     int supportBurstShotsRemaining = 0;
     float supportBurstShotTimerSeconds = 0.f;
+
+    bool rangedDodgeActive = false;
+    float rangedDodgeTimeRemainingSeconds = 0.f;
+    int rangedDodgeDir = 0;
+    sf::Vector2f rangedDodgeWorldDir{0.f, 0.f};
+    std::uint32_t rngState = 0;
   };
   struct EnemyTag{};
 

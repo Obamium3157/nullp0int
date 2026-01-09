@@ -33,6 +33,16 @@ namespace
       (static_cast<float>(ty) + 0.5f) * tileSize
     };
   }
+
+  [[nodiscard]] std::uint32_t seedFromPos(const sf::Vector2f p, const ecs::EnemyClass cls)
+  {
+    const auto x = static_cast<std::uint32_t>(static_cast<int>(p.x) * 73856093);
+    const auto y = static_cast<std::uint32_t>(static_cast<int>(p.y) * 19349663);
+    const std::uint32_t c = static_cast<std::uint32_t>(cls) * 83492791u;
+    std::uint32_t s = x ^ y ^ c ^ 0x9E3779B9u;
+    if (s == 0u) s = 0xA3C59AC3u;
+    return s;
+  }
 }
 
 ecs::Entity initEnemy(ecs::Registry& registry,
@@ -46,7 +56,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
   registry.addComponent<ecs::VelocityComponent>(enemy, ecs::VelocityComponent{});
   registry.addComponent<ecs::EnemyTag>(enemy, ecs::EnemyTag{});
 
-  float speed;
+  float speed = 0.f;
   float maxHp = 40.f;
 
   ecs::EnemyComponent ec;
@@ -66,6 +76,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
 
   ec.attackCooldownSeconds = (cls == ecs::EnemyClass::MELEE) ? 0.f : 0.25f;
   ec.cooldownRemainingSeconds = 0.f;
+  ec.rngState = seedFromPos(initialPos, cls);
 
   switch (cls)
   {
@@ -82,6 +93,9 @@ ecs::Entity initEnemy(ecs::Registry& registry,
     case ecs::EnemyClass::RANGE:
       ec.textureId = "range_walk_1";
       ec.walkFrames = {"range_walk_1", "range_walk_2"};
+      ec.walkFramesLeft = {"range_walk_left_1", "range_walk_left_2"};
+      ec.walkFramesRight = {"range_walk_right_1", "range_walk_right_2"};
+      ec.walkFramesBack = {"range_walk_back_1", "range_walk_back_2"};
       ec.attackFrames = {"range_attack_1", "range_attack_2"};
       ec.walkFrameTime = 0.3f;
       ec.attackFrameTime = 0.26f;
@@ -92,6 +106,9 @@ ecs::Entity initEnemy(ecs::Registry& registry,
     case ecs::EnemyClass::SUPPORT:
       ec.textureId = "support_walk_1";
       ec.walkFrames = {"support_walk_1", "support_walk_2", "support_walk_3", "support_walk_4"};
+      ec.walkFramesLeft = {"support_walk_left_1", "support_walk_left_2", "support_walk_left_3"};
+      ec.walkFramesRight = {"support_walk_right_1", "support_walk_right_2", "support_walk_right_3"};
+      ec.walkFramesBack = {"support_walk_back_1", "support_walk_back_2"};
       ec.attackFrames = {"support_attack_1", "support_attack_2"};
       ec.walkFrameTime = 0.3f;
       ec.attackFrameTime = 0.16f;

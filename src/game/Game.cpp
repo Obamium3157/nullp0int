@@ -110,6 +110,12 @@ void Game::init_textures()
 
   m_textureManager.load("range_walk_1", "resources/assets/PLAYA1.png");
   m_textureManager.load("range_walk_2", "resources/assets/PLAYC1.png");
+  m_textureManager.load("range_walk_left_1", "resources/assets/PLAYA3A7R.png");
+  m_textureManager.load("range_walk_left_2", "resources/assets/PLAYA4A6R.png");
+  m_textureManager.load("range_walk_right_1", "resources/assets/PLAYA4A6.png");
+  m_textureManager.load("range_walk_right_2", "resources/assets/PLAYA3A7.png");
+  m_textureManager.load("range_walk_back_1", "resources/assets/PLAYB5.png");
+  m_textureManager.load("range_walk_back_2", "resources/assets/PLAYD5.png");
   m_textureManager.load("range_attack_1", "resources/assets/PLAYE1.png");
   m_textureManager.load("range_attack_2", "resources/assets/PLAYF1.png");
 
@@ -117,6 +123,14 @@ void Game::init_textures()
   m_textureManager.load("support_walk_2", "resources/assets/SPOSB1.png");
   m_textureManager.load("support_walk_3", "resources/assets/SPOSC1.png");
   m_textureManager.load("support_walk_4", "resources/assets/SPOSD1.png");
+  m_textureManager.load("support_walk_left_1", "resources/assets/SPOSA2A8R.png");
+  m_textureManager.load("support_walk_left_2", "resources/assets/SPOSA3A7R.png");
+  m_textureManager.load("support_walk_left_3", "resources/assets/SPOSA4A6R.png");
+  m_textureManager.load("support_walk_right_1", "resources/assets/SPOSA2A8.png");
+  m_textureManager.load("support_walk_right_2", "resources/assets/SPOSA3A7.png");
+  m_textureManager.load("support_walk_right_3", "resources/assets/SPOSA4A6.png");
+  m_textureManager.load("support_walk_back_1", "resources/assets/SPOSB5.png");
+  m_textureManager.load("support_walk_back_2", "resources/assets/SPOSC5.png");
   m_textureManager.load("support_attack_1", "resources/assets/SPOSE1.png");
   m_textureManager.load("support_attack_2", "resources/assets/SPOSF1.png");
 

@@ -6,8 +6,11 @@
 
 #include <algorithm>
 
-#include "PathfindingAnimation.h"
 #include "../collision/CollisionSystem.h"
+
+#include "Movement.h"
+#include "PathfindingAnimation.h"
+#include "PathfindingTypes.h"
 
 namespace ecs::npc
 {
@@ -125,6 +128,82 @@ namespace ecs::npc
     return proj;
   }
 
+  [[nodiscard]] static std::uint32_t xorshift32(std::uint32_t& s)
+  {
+    if (s == 0u) s = 0xA3C59AC3u;
+    s ^= s << 13;
+    s ^= s >> 17;
+    s ^= s << 5;
+    return s;
+  }
+
+  [[nodiscard]] static float rand01(std::uint32_t& s)
+  {
+    const std::uint32_t r = xorshift32(s);
+    return static_cast<float>(r & 0x00FFFFFFu) / static_cast<float>(0x01000000u);
+  }
+
+  enum class DodgeDir
+  {
+    Left = 0,
+    Right = 1,
+    Back = 2,
+  };
+
+  [[nodiscard]] static DodgeDir pickDodgeDir(EnemyComponent& enemy)
+  {
+    const int v = std::clamp(static_cast<int>(rand01(enemy.rngState) * 3.f), 0, 2);
+    return static_cast<DodgeDir>(v);
+  }
+
+  [[nodiscard]] static float pickDodgeDurationSeconds(EnemyComponent& enemy)
+  {
+    constexpr float kMin = 0.2f;
+    constexpr float kMax = 1.5f;
+    return kMin + rand01(enemy.rngState) * (kMax - kMin);
+  }
+
+  static void beginRangedDodge(
+    EnemyComponent& enemy,
+    SpriteComponent& sprite,
+    const PerceptionResult& perception
+  )
+  {
+    const DodgeDir d = pickDodgeDir(enemy);
+    enemy.rangedDodgeActive = true;
+    enemy.rangedDodgeTimeRemainingSeconds = pickDodgeDurationSeconds(enemy);
+    enemy.rangedDodgeDir = static_cast<int>(d);
+
+    sf::Vector2f dir{0.f, 0.f};
+    const sf::Vector2f toPlayer = perception.toPlayerDir;
+
+    const std::vector<std::string>* anim = &enemy.walkFrames;
+
+    switch (d)
+    {
+      case DodgeDir::Left:
+        dir = perpendicularStrafeDir(toPlayer, false);
+        if (!enemy.walkFramesLeft.empty()) anim = &enemy.walkFramesLeft;
+        break;
+      case DodgeDir::Right:
+        dir = perpendicularStrafeDir(toPlayer, true);
+        if (!enemy.walkFramesRight.empty()) anim = &enemy.walkFramesRight;
+        break;
+      case DodgeDir::Back:
+        dir = sf::Vector2f{-toPlayer.x, -toPlayer.y};
+        if (!enemy.walkFramesBack.empty()) anim = &enemy.walkFramesBack;
+        break;
+    }
+
+    enemy.rangedDodgeWorldDir = normalizedOrZero(dir);
+
+    enemy.state = EnemyState::MOVING;
+    if (anim && !anim->empty())
+    {
+      setAnimation(sprite, *anim, enemy.walkFrameTime, true, true);
+    }
+  }
+
   bool updateCombat(
     Registry& registry,
     const Entity tilemapEntity,
@@ -140,7 +219,6 @@ namespace ecs::npc
     const float dtSeconds
   )
   {
-
     const float meleeRangeWorld = enemy.meleeAttackRangeTiles * tileSize;
     const float rangedAttackRangeWorld = enemy.rangedAttackRangeTiles * tileSize;
 
@@ -162,8 +240,7 @@ namespace ecs::npc
         {
           enemy.supportBurstShotTimerSeconds = std::max(0.f, enemy.supportBurstShotTimerSeconds - std::max(0.f, dtSeconds));
 
-          const ProjectileParams params = supportProjectileParams();
-          if (params.speed > 0.f)
+          if (const ProjectileParams params = supportProjectileParams(); params.speed > 0.f)
           {
             while (enemy.supportBurstShotsRemaining > 0 && enemy.supportBurstShotTimerSeconds <= 0.f)
             {
@@ -191,13 +268,16 @@ namespace ecs::npc
         }
       }
 
-      if (!enemy.attackDamageApplied)
+      if (enemy.cls != EnemyClass::SUPPORT)
       {
-        const std::size_t applyFrame = enemy.attackApplyFrame;
-        if ((!sprite.playing) || (sprite.currentFrame >= applyFrame))
+        if (!enemy.attackDamageApplied)
         {
-          applyDamage(enemy, playerHealth, perception, meleeRangeWorld, rangedAttackRangeWorld);
-          enemy.attackDamageApplied = true;
+          const std::size_t applyFrame = enemy.attackApplyFrame;
+          if ((!sprite.playing) || (sprite.currentFrame >= applyFrame))
+          {
+            applyDamage(enemy, playerHealth, perception, meleeRangeWorld, rangedAttackRangeWorld);
+            enemy.attackDamageApplied = true;
+          }
         }
       }
 
@@ -227,7 +307,17 @@ namespace ecs::npc
               enemy.supportBurstShotTimerSeconds = 0.f;
             }
           }
-          else enterMoving(enemy, sprite);
+          else
+          {
+            if (rangedCanShoot)
+            {
+              beginRangedDodge(enemy, sprite, perception);
+            }
+            else
+            {
+              enterMoving(enemy, sprite);
+            }
+          }
         }
       }
 
