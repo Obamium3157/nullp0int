@@ -61,6 +61,8 @@ add_executable(nullp0int src/main.cpp
         src/ecs/systems/npc/Movement.h
         src/ecs/systems/npc/Movement.cpp
         src/ecs/systems/npc/PathfindingReservation.cpp
+        src/game/Hud.h
+        src/game/Hud.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)

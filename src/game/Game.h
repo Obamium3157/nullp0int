@@ -10,6 +10,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "Hud.h"
 #include "../constants.h"
 #include "../configuration/Configuration.h"
 #include "../ecs/Registry.h"
@@ -61,6 +62,8 @@ private:
 
   sf::Font m_uiFont;
   bool m_uiFontLoaded = false;
+
+  Hud m_hud;
 
   void init_textures();
   void init_player();

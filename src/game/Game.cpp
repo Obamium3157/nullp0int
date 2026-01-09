@@ -251,27 +251,7 @@ void Game::update(const float dt)
 
 void Game::drawHud()
 {
-  if (!m_uiFontLoaded) return;
-  if (m_player == ecs::INVALID_ENTITY) return;
-
-  const auto* hp = m_registry.getComponent<ecs::HealthComponent>(m_player);
-  if (!hp) return;
-
-  sf::Text text;
-  text.setFont(m_uiFont);
-  text.setCharacterSize(28);
-  text.setFillColor(sf::Color::White);
-
-  const int cur = static_cast<int>(std::round(hp->current));
-  const int mx  = static_cast<int>(std::round(hp->max));
-
-  text.setString(toSfStringUtf8("HP: " + std::to_string(cur) + "/" + std::to_string(mx)));
-  const auto      bounds  = text.getLocalBounds();
-  constexpr float marginX = 18.f;
-  constexpr float marginY = 14.f;
-  const float     y       = static_cast<float>(m_window.getSize().y) - (bounds.top + bounds.height) - marginY;
-  text.setPosition(marginX, y);
-  m_window.draw(text);
+  m_hud.draw(m_window, m_registry, m_player, m_uiFont, m_uiFontLoaded);
 }
 
 void Game::render()
