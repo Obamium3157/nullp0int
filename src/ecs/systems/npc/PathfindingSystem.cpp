@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <queue>
 #include <unordered_set>
 #include <vector>
@@ -73,43 +74,65 @@ namespace
     return x;
   }
 
-  [[nodiscard]] bool hasLineOfSight(const Grid& g, sf::Vector2i a, sf::Vector2i b)
+  [[nodiscard]] bool hasLineOfSightWorld(const ecs::TilemapComponent& map, const sf::Vector2f fromWorld, const sf::Vector2f toWorld)
   {
-    int x0 = a.x;
-    int y0 = a.y;
-    const int x1 = b.x;
-    const int y1 = b.y;
+    const auto tileSize = static_cast<double>(map.tileSize);
+    if (tileSize <= 0.0) return false;
 
-    const int dx = std::abs(x1 - x0);
-    const int dy = std::abs(y1 - y0);
-    const int sx = (x0 < x1) ? 1 : -1;
-    const int sy = (y0 < y1) ? 1 : -1;
+    const sf::Vector2f dWorld = toWorld - fromWorld;
+    const double distWorld = std::hypot(static_cast<double>(dWorld.x), static_cast<double>(dWorld.y));
+    if (!std::isfinite(distWorld) || distWorld <= BIG_EPSILON) return true;
 
-    int err = dx - dy;
+    const double dirX = static_cast<double>(dWorld.x) / distWorld;
+    const double dirY = static_cast<double>(dWorld.y) / distWorld;
 
-    while (true)
+    const double rayX = static_cast<double>(fromWorld.x) / tileSize + dirX * BIG_EPSILON;
+    const double rayY = static_cast<double>(fromWorld.y) / tileSize + dirY * BIG_EPSILON;
+
+    const int targetTileX = static_cast<int>(std::floor(static_cast<double>(toWorld.x) / tileSize));
+    const int targetTileY = static_cast<int>(std::floor(static_cast<double>(toWorld.y) / tileSize));
+
+    int mapX = static_cast<int>(std::floor(rayX));
+    int mapY = static_cast<int>(std::floor(rayY));
+
+    if (mapX == targetTileX && mapY == targetTileY) return true;
+
+    const int stepX = (dirX >= 0.0) ? 1 : -1;
+    const int stepY = (dirY >= 0.0) ? 1 : -1;
+
+    const double deltaDistX = (std::abs(dirX) < BIGGER_EPSILON) ? std::numeric_limits<double>::infinity() : std::abs(1.0 / dirX);
+    const double deltaDistY = (std::abs(dirY) < BIGGER_EPSILON) ? std::numeric_limits<double>::infinity() : std::abs(1.0 / dirY);
+
+    const double nextGridX = (stepX > 0) ? (std::floor(rayX) + 1.0) : std::floor(rayX);
+    const double nextGridY = (stepY > 0) ? (std::floor(rayY) + 1.0) : std::floor(rayY);
+
+    double sideDistX = (std::abs(dirX) < BIGGER_EPSILON) ? std::numeric_limits<double>::infinity() : std::abs(nextGridX - rayX) * deltaDistX;
+    double sideDistY = (std::abs(dirY) < BIGGER_EPSILON) ? std::numeric_limits<double>::infinity() : std::abs(nextGridY - rayY) * deltaDistY;
+
+    const double maxDistTiles = distWorld / tileSize;
+    double traveledTiles = 0.0;
+
+    while (traveledTiles <= maxDistTiles + BIG_EPSILON)
     {
-      if (x0 == x1 && y0 == y1) return true;
-
-      if (!(x0 == a.x && y0 == a.y))
+      if (sideDistX < sideDistY)
       {
-        if (g.blocked(x0, y0)) return false;
+        mapX += stepX;
+        traveledTiles = sideDistX;
+        sideDistX += deltaDistX;
+      }
+      else
+      {
+        mapY += stepY;
+        traveledTiles = sideDistY;
+        sideDistY += deltaDistY;
       }
 
-      const int e2 = 2 * err;
-      if (e2 > -dy)
-      {
-        err -= dy;
-        x0 += sx;
-      }
-      if (e2 < dx)
-      {
-        err += dx;
-        y0 += sy;
-      }
-
-      if (!g.inBounds(x0, y0)) return false;
+      if (mapX < 0 || mapY < 0 || mapX >= static_cast<int>(map.width) || mapY >= static_cast<int>(map.height)) return false;
+      if (map.isWall(mapX, mapY)) return false;
+      if (mapX == targetTileX && mapY == targetTileY) return true;
     }
+
+    return false;
   }
 
   [[nodiscard]] bool passesFovCone(
@@ -317,8 +340,8 @@ namespace
     const std::unordered_set<int>& occupied,
     const sf::Vector2i curTile,
     const sf::Vector2i playerTile,
-    const float desiredRange,
-    const float tolerance,
+    const float desiredRangeTiles,
+    const float toleranceTiles,
     const sf::Vector2f toPlayerDir,
     const bool clockwise
   )
@@ -329,15 +352,23 @@ namespace
     };
 
     if (!g.inBounds(curTile.x, curTile.y)) return curTile;
+
     const int curIndex = g.idx(curTile.x, curTile.y);
+    const int curDist = dist[curIndex];
+    if (curDist < 0) return curTile;
 
     sf::Vector2i best = curTile;
-    float bestScore = 1e9f;
+    float bestScore = std::numeric_limits<float>::infinity();
+
+    const sf::Vector2f tangent = clockwise
+      ? sf::Vector2f{-toPlayerDir.y, toPlayerDir.x}
+      : sf::Vector2f{toPlayerDir.y, -toPlayerDir.x};
 
     for (const auto d : kDirs8)
     {
       const int nx = curTile.x + d.x;
       const int ny = curTile.y + d.y;
+
       if (!g.inBounds(nx, ny)) continue;
       if (g.blocked(nx, ny)) continue;
 
@@ -347,22 +378,21 @@ namespace
       }
 
       const int nIndex = g.idx(nx, ny);
-      if (occupied.contains(nIndex) && nIndex != curIndex) continue;
-
       const int nd = dist[nIndex];
       if (nd < 0) continue;
 
-      const float rangeErr = std::abs(static_cast<float>(nd) - desiredRange);
-      if (rangeErr > tolerance + 0.5f) continue;
+      if (!(nx == playerTile.x && ny == playerTile.y))
+      {
+        if (occupied.contains(nIndex) && nIndex != curIndex) continue;
+      }
 
-      const sf::Vector2f stepDir = normalizedOrZero(g.tileCenterWorld(nx, ny) - g.tileCenterWorld(curTile.x, curTile.y));
-      if (stepDir.x == 0.f && stepDir.y == 0.f) continue;
+      const float rangeErr = std::abs(static_cast<float>(nd) - desiredRangeTiles);
+      if (rangeErr > toleranceTiles * 2.0f) continue;
 
-      const float tangential = std::abs(stepDir.x * toPlayerDir.x + stepDir.y * toPlayerDir.y);
+      const sf::Vector2f stepDir = normalizedOrZero(sf::Vector2f{static_cast<float>(d.x), static_cast<float>(d.y)});
+      const float tangential = 1.f - clamp01((stepDir.x * tangent.x + stepDir.y * tangent.y + 1.f) * 0.5f);
 
-      const float cross = (toPlayerDir.x * stepDir.y - toPlayerDir.y * stepDir.x);
-      const float orbitPenalty = clockwise ? (cross < 0.f ? 0.4f : 0.f) : (cross > 0.f ? 0.4f : 0.f);
-
+      const float orbitPenalty = (nd == curDist) ? 0.f : 0.15f;
       const float driftPenalty = std::abs(static_cast<float>(nd) - static_cast<float>(dist[curIndex])) * 0.15f;
 
       if (const float score = rangeErr * 1.0f + tangential * 0.7f + orbitPenalty + driftPenalty; score < bestScore)
@@ -499,9 +529,10 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
 
     const bool withinVisionRange = std::isfinite(distWorld) && distWorld <= visionRangeWorld;
 
+    const bool losNow = hasLineOfSightWorld(*tilemap, pos->position, playerPos->position);
+
     const sf::Vector2i enemyTile = tilemap->worldToTile(pos->position);
     const bool enemyTileValid = g.inBounds(enemyTile.x, enemyTile.y);
-    const bool losNow = enemyTileValid && hasLineOfSight(g, enemyTile, playerTile);
 
     bool seesPlayerNow = false;
     if (withinVisionRange && losNow)
@@ -684,7 +715,7 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
         continue;
       }
 
-      const sf::Vector2f perp = (ecs::entityIndex(e) % 2 == 0)
+      const sf::Vector2f perp = (entityIndex(e) % 2 == 0)
         ? sf::Vector2f{-toPlayerDir.y, toPlayerDir.x}
         : sf::Vector2f{toPlayerDir.y, -toPlayerDir.x};
 
@@ -698,7 +729,7 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
       continue;
     }
 
-    const bool clockwise = (ecs::entityIndex(e) % 2 == 0);
+    const bool clockwise = (entityIndex(e) % 2 == 0);
     sf::Vector2i nextTile = enemyTile;
 
     if (tooFar)

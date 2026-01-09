@@ -12,6 +12,7 @@ constexpr unsigned HALF_SCREEN_HEIGHT                 = SCREEN_HEIGHT / 2.f;
 constexpr float    RAY_ANGLE_OFFSET                   = 0.0001f;
 constexpr double   SMALL_EPSILON                      = 0.0001;
 constexpr double   BIG_EPSILON                        = 1e-6;
+constexpr double   BIGGER_EPSILON                     = 1e-12;
 constexpr double   EPSILON_DIST                       = 1e-9;
 constexpr float    SAFE_REPEAT_BEFORE_NORMALIZATION   = 1024.f;
 constexpr unsigned MAX_ITEMS_TO_RENDER                = 8192;
