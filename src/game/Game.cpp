@@ -100,6 +100,7 @@ void Game::init_textures()
   m_textureManager.load("shotgun_fire_3", "resources/assets/SHTGA0.png");
 
   m_textureManager.load("shotgun_projectile", "resources/assets/BAL1A0.png");
+  m_textureManager.load("support_projectile", "resources/assets/IFOGA0.png");
 
   m_textureManager.load("melee_walk_1", "resources/assets/BOSSA1.png");
   m_textureManager.load("melee_walk_2", "resources/assets/BOSSC1.png");

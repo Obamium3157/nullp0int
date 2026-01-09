@@ -6,7 +6,6 @@
 #define NULLP0INT_PATHFINDINGSYSTEM_H
 #include "../../Registry.h"
 
-
 namespace ecs
 {
   class PathfindingSystem

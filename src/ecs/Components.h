@@ -109,6 +109,9 @@ namespace ecs
     std::vector<std::string> attackFrames;
     float walkFrameTime = 0.09f;
     float attackFrameTime = 0.07f;
+
+    int supportBurstShotsRemaining = 0;
+    float supportBurstShotTimerSeconds = 0.f;
   };
   struct EnemyTag{};
 

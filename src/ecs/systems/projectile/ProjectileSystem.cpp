@@ -68,6 +68,15 @@ namespace
     }
   }
 
+  void applyDamageNoKill(ecs::Registry& registry, const ecs::Entity target, const float dmg)
+  {
+    if (target == ecs::INVALID_ENTITY) return;
+    if (auto* hp = registry.getComponent<ecs::HealthComponent>(target))
+    {
+      hp->current = std::max(0.f, hp->current - dmg);
+    }
+  }
+
   [[nodiscard]] float approximateWallHitT(
     ecs::Registry& registry,
     const ecs::Entity tilemapEntity,
@@ -121,6 +130,19 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
 
   const auto ents = registry.entities();
 
+  Entity player = INVALID_ENTITY;
+  for (const auto& e : ents)
+  {
+    if (registry.hasComponent<PlayerTag>(e))
+    {
+      player = e;
+      break;
+    }
+  }
+
+  const auto* playerPos = (player != INVALID_ENTITY) ? registry.getComponent<PositionComponent>(player) : nullptr;
+  const auto* playerRad = (player != INVALID_ENTITY) ? registry.getComponent<RadiusComponent>(player) : nullptr;
+
   for (const auto& e : ents)
   {
     if (!registry.hasComponent<ProjectileTag>(e)) continue;
@@ -143,28 +165,45 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
       p0.y + prj->direction.y * prj->speed * dtSeconds
     };
 
-    Entity hitEnemy = INVALID_ENTITY;
-    float hitEnemyT = 2.f;
+    const bool ownerIsPlayer = (prj->owner != INVALID_ENTITY) && registry.hasComponent<PlayerTag>(prj->owner);
 
-    for (const auto& enemy : ents)
+    Entity hitEntity = INVALID_ENTITY;
+    float hitEntityT = 2.f;
+
+    if (ownerIsPlayer)
     {
-      if (!registry.hasComponent<EnemyTag>(enemy)) continue;
-
-      if (enemy == prj->owner && prj->livedSeconds < prj->ignoreOwnerSeconds) continue;
-      if (enemy == prj->owner) continue;
-
-      const auto* ep = registry.getComponent<PositionComponent>(enemy);
-      const auto* er = registry.getComponent<RadiusComponent>(enemy);
-      if (!ep || !er) continue;
-
-      const float rr = er->radius + prj->radius;
-
-      if (float t = 2.f; segmentCircleIntersection(p0, p1, ep->position, rr, t))
+      for (const auto& enemy : ents)
       {
-        if (t < hitEnemyT)
+        if (!registry.hasComponent<EnemyTag>(enemy)) continue;
+
+        if (enemy == prj->owner && prj->livedSeconds < prj->ignoreOwnerSeconds) continue;
+        if (enemy == prj->owner) continue;
+
+        const auto* ep = registry.getComponent<PositionComponent>(enemy);
+        const auto* er = registry.getComponent<RadiusComponent>(enemy);
+        if (!ep || !er) continue;
+
+        const float rr = er->radius + prj->radius;
+
+        if (float t = 2.f; segmentCircleIntersection(p0, p1, ep->position, rr, t))
         {
-          hitEnemyT = t;
-          hitEnemy = enemy;
+          if (t < hitEntityT)
+          {
+            hitEntityT = t;
+            hitEntity = enemy;
+          }
+        }
+      }
+    }
+    else
+    {
+      if (player != INVALID_ENTITY && playerPos && playerRad)
+      {
+        const float rr = playerRad->radius + prj->radius;
+        if (float t = 2.f; segmentCircleIntersection(p0, p1, playerPos->position, rr, t))
+        {
+          hitEntityT = t;
+          hitEntity = player;
         }
       }
     }
@@ -173,10 +212,13 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
 
     prj->positionPrev = p0;
 
-    if (hitEnemy != INVALID_ENTITY && hitEnemyT <= 1.f && hitEnemyT < wallT)
+    if (hitEntity != INVALID_ENTITY && hitEntityT <= 1.f && hitEntityT < wallT)
     {
-      pos->position = lerp(p0, p1, std::clamp(hitEnemyT, 0.f, 1.f));
-      applyDamageOrKill(registry, hitEnemy, prj->damage);
+      pos->position = lerp(p0, p1, std::clamp(hitEntityT, 0.f, 1.f));
+
+      if (ownerIsPlayer) applyDamageOrKill(registry, hitEntity, prj->damage);
+      else applyDamageNoKill(registry, hitEntity, prj->damage);
+
       toDestroy.push_back(e);
       continue;
     }

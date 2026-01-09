@@ -14,12 +14,18 @@ namespace ecs::npc
   void applyCooldown(EnemyComponent& enemy);
 
   [[nodiscard]] bool updateCombat(
+    Registry& registry,
+    Entity tilemapEntity,
+    Entity enemyEntity,
+    sf::Vector2f enemyWorldPos,
+    float enemyRadius,
     EnemyComponent& enemy,
     SpriteComponent& sprite,
     VelocityComponent& vel,
     HealthComponent& playerHealth,
     const PerceptionResult& perception,
-    float tileSize
+    float tileSize,
+    float dtSeconds
   );
 }
 

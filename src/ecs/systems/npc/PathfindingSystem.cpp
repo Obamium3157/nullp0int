@@ -118,7 +118,8 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
       enterMoving(*enemy, *sprite);
     }
 
-    if (updateCombat(*enemy, *sprite, *vel, *playerHealth, perception, g.tileSize))
+    if (const float enemyRadius = (registry.getComponent<RadiusComponent>(e) ? registry.getComponent<RadiusComponent>(e)->radius : 0.f);
+      updateCombat(registry, tilemapEntity, e, pos->position, enemyRadius, *enemy, *sprite, *vel, *playerHealth, perception, g.tileSize, dtSafe))
     {
       continue;
     }
@@ -139,6 +140,33 @@ void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEnti
     const bool enemyTileValid = g.inBounds(enemyTile.x, enemyTile.y);
 
     if (enemy->cls == EnemyClass::MELEE)
+    {
+      if (perception.los)
+      {
+        vel->velocity = { perception.toPlayerDir.x * v, perception.toPlayerDir.y * v };
+        continue;
+      }
+
+      if (!enemyTileValid)
+      {
+        setVelocityStop(*vel);
+        continue;
+      }
+
+      const sf::Vector2i intended = pickNextTileToward(g, distCache.field(), initiallyOccupied, enemyTile, playerTile);
+
+      MoveReservation r;
+      r.entity = e;
+      r.fromTile = enemyTile;
+      r.intendedTile = intended;
+      r.wantsMove = true;
+      reservations.push_back(r);
+
+      setVelocityStop(*vel);
+      continue;
+    }
+
+    if (!perception.seesPlayerNow)
     {
       if (perception.los)
       {
