@@ -1,7 +1,3 @@
-//
-// Created by obamium3157 on 13.11.2025.
-//
-
 #include "Game.h"
 #include "GameUI.h"
 
@@ -85,7 +81,6 @@ void Game::init_textures()
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
   m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
-
 
   m_textureManager.load("pistol_idle", "resources/assets/PISGA0.png");
   m_textureManager.load("pistol_fire_0", "resources/assets/PISGB0.png");
@@ -224,17 +219,25 @@ void Game::update(const float dt)
 
   const float mouseDx = consumeMouseDeltaX(m_window, captureMouse);
 
+  if (m_state == GlobalState::Playing)
+  {
+    m_worldTimeSeconds += dtSafe;
+
+    ecs::InputSystem::update(m_registry, m_config, dtSafe, mouseDx);
+    ecs::PathfindingSystem::update(m_registry, m_tilemap, dtSafe);
+    ecs::AnimationSystem::update(m_registry, dtSafe);
+    ecs::PhysicsSystem::update(m_registry, dtSafe, m_tilemap);
+    ecs::RayCasting::rayCast(m_registry, m_config, m_player);
+    ecs::WeaponSystem::update(m_registry, m_config, m_tilemap, m_player, dtSafe);
+    ecs::ProjectileSystem::update(m_registry, m_config, m_tilemap, dtSafe);
+  }
+
+  if (m_state == GlobalState::Playing || m_state == GlobalState::Paused)
+  {
+    m_hud.update(dtSafe, m_registry, m_player);
+  }
+
   if (m_state != GlobalState::Playing) return;
-
-  m_worldTimeSeconds += dtSafe;
-
-  ecs::InputSystem::update(m_registry, m_config, dtSafe, mouseDx);
-  ecs::PathfindingSystem::update(m_registry, m_tilemap, dtSafe);
-  ecs::AnimationSystem::update(m_registry, dtSafe);
-  ecs::PhysicsSystem::update(m_registry, dtSafe, m_tilemap);
-  ecs::RayCasting::rayCast(m_registry, m_config, m_player);
-  ecs::WeaponSystem::update(m_registry, m_config, m_tilemap, m_player, dtSafe);
-  ecs::ProjectileSystem::update(m_registry, m_config, m_tilemap, dtSafe);
 
   if (m_player != ecs::INVALID_ENTITY)
   {
