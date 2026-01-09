@@ -50,6 +50,17 @@ add_executable(nullp0int src/main.cpp
         src/game/GameUI.cpp
         src/game/GameUI.h
         src/game/GameMenuUXUI.cpp
+        src/ecs/systems/npc/PathfindingTypes.h
+        src/ecs/systems/npc/PathfindingPerception.h
+        src/ecs/systems/npc/PathfindingPerception.cpp
+        src/ecs/systems/npc/PathfindingDistanceField.h
+        src/ecs/systems/npc/PathfindingDistanceField.cpp
+        src/ecs/systems/npc/PathfindingAnimation.h
+        src/ecs/systems/npc/PathfindingAnimation.cpp
+        src/ecs/systems/npc/Combat.cpp
+        src/ecs/systems/npc/Movement.h
+        src/ecs/systems/npc/Movement.cpp
+        src/ecs/systems/npc/PathfindingReservation.cpp
 )
 
 target_link_libraries(nullp0int PRIVATE sfml-graphics sfml-window sfml-system)
