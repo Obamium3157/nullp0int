@@ -11,6 +11,7 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include "../constants.h"
 #include "../ecs/Entity.h"
 #include "../ecs/Registry.h"
 
@@ -24,6 +25,13 @@ public:
     float gap = 7.f;
   };
 
+  struct HitMarkerStyle
+  {
+    float armLength = 12.f;
+    float thickness = 3.f;
+    float gap = 14.f;
+  };
+
   struct DamageVignetteStyle
   {
     float durationSeconds = 0.35f;
@@ -34,6 +42,7 @@ public:
   };
 
   void setCrosshairStyle(CrosshairStyle style);
+  void setHitMarkerStyle(HitMarkerStyle style);
   void setDamageVignetteStyle(const DamageVignetteStyle &style);
 
   void update(float dtSeconds,
@@ -48,6 +57,7 @@ public:
 
 private:
   CrosshairStyle m_crosshair;
+  HitMarkerStyle m_hitMarker;
   DamageVignetteStyle m_vignette;
 
   float m_lastHp = -1.f;
@@ -63,6 +73,10 @@ private:
                   bool fontLoaded) ;
 
   void drawCrosshair(sf::RenderWindow& window,
+                     ecs::Registry& registry,
+                     ecs::Entity player) const;
+
+  void drawHitMarker(sf::RenderWindow& window,
                      ecs::Registry& registry,
                      ecs::Entity player) const;
 

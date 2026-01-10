@@ -15,6 +15,11 @@ void Hud::setCrosshairStyle(const CrosshairStyle style)
   m_crosshair = style;
 }
 
+void Hud::setHitMarkerStyle(const HitMarkerStyle style)
+{
+  m_hitMarker = style;
+}
+
 void Hud::setDamageVignetteStyle(const DamageVignetteStyle &style)
 {
   m_vignette = style;
@@ -47,6 +52,15 @@ void Hud::update(const float dtSeconds,
 
   if (player == ecs::INVALID_ENTITY) return;
   if (!registry.isAlive(player)) return;
+
+  if (auto* hm = registry.getComponent<ecs::HitMarkerComponent>(player))
+  {
+    hm->remainingSeconds = std::max(0.f, hm->remainingSeconds - dtSafe);
+    if (hm->remainingSeconds <= 0.f)
+    {
+      registry.removeComponent<ecs::HitMarkerComponent>(player);
+    }
+  }
 
   const auto* hp = registry.getComponent<ecs::HealthComponent>(player);
   if (!hp) return;
@@ -81,6 +95,7 @@ void Hud::draw(sf::RenderWindow& window,
 
   drawDamageVignette(window);
   drawCrosshair(window, registry, player);
+  drawHitMarker(window, registry, player);
   drawHealth(window, registry, player, font, fontLoaded);
 
   window.setView(prevView);
@@ -160,6 +175,60 @@ void Hud::drawCrosshair(sf::RenderWindow& window,
   window.draw(bar);
 }
 
+void Hud::drawHitMarker(sf::RenderWindow& window,
+                        ecs::Registry& registry,
+                        const ecs::Entity player) const
+{
+  const auto* hm = registry.getComponent<ecs::HitMarkerComponent>(player);
+  if (!hm) return;
+
+  constexpr float duration = std::max(0.01f, HITMARKER_DURATION_SECONDS);
+  const float t = clamp01(hm->remainingSeconds / duration);
+  if (t <= 0.f) return;
+
+  const auto alpha = static_cast<sf::Uint8>(std::lround(255.f * t));
+  const sf::Color color(255, 255, 255, alpha);
+
+  const sf::Vector2u ws = window.getSize();
+  const sf::Vector2f center(static_cast<float>(ws.x) * 0.5f, static_cast<float>(ws.y) * 0.5f);
+
+  const float len = std::max(1.f, m_hitMarker.armLength);
+  const float thick = std::max(1.f, m_hitMarker.thickness);
+  const float gap = std::max(0.f, m_hitMarker.gap);
+
+  const sf::Vector2f size(len, thick);
+  const sf::Vector2f origin(size.x * 0.5f, size.y * 0.5f);
+  const float offset = (gap * 0.5f) + (len * 0.5f);
+
+  auto axisOffset = [&](const float deg) -> sf::Vector2f
+  {
+    const float rad = deg * M_PI / 180.f;
+    return { std::cos(rad) * offset, std::sin(rad) * offset };
+  };
+
+  sf::RectangleShape bar;
+  bar.setSize(size);
+  bar.setOrigin(origin);
+  bar.setFillColor(color);
+
+  constexpr float a1 = 45.f;
+  constexpr float a2 = -45.f;
+
+  bar.setRotation(a1);
+  sf::Vector2f d = axisOffset(a1);
+  bar.setPosition(center.x + d.x, center.y + d.y);
+  window.draw(bar);
+  bar.setPosition(center.x - d.x, center.y - d.y);
+  window.draw(bar);
+
+  bar.setRotation(a2);
+  d = axisOffset(a2);
+  bar.setPosition(center.x + d.x, center.y + d.y);
+  window.draw(bar);
+  bar.setPosition(center.x - d.x, center.y - d.y);
+  window.draw(bar);
+}
+
 void Hud::drawDamageVignette(sf::RenderWindow& window) const
 {
   if (m_damageRemaining <= 0.f) return;
@@ -190,8 +259,8 @@ void Hud::drawDamageVignette(sf::RenderWindow& window) const
     const float ny = (cy > 0.0001f) ? ((y - cy) / cy) : 0.f;
     const float r = std::sqrt(nx * nx + ny * ny);
 
-    const float t = clamp01((r - inner) / std::max(0.0001f, 1.f - inner));
-    const float v = std::pow(t, expn);
+    const float t2 = clamp01((r - inner) / std::max(0.0001f, 1.f - inner));
+    const float v = std::pow(t2, expn);
 
     const float a = std::clamp(maxA * v, 0.f, 255.f);
     return static_cast<sf::Uint8>(std::lround(a));

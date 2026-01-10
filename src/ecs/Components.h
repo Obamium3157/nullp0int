@@ -218,7 +218,6 @@ namespace ecs
     std::vector<RayHit> hits;
   };
 
-
   struct SpriteComponent
   {
     std::string textureId;
@@ -270,6 +269,11 @@ namespace ecs
     float animAccumulator = 0.f;
 
     float crosshairFlashRemainingSeconds = 0.f;
+  };
+
+  struct HitMarkerComponent
+  {
+    float remainingSeconds = 0.f;
   };
 
   struct PlayerWeaponInputState

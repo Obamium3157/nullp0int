@@ -16,7 +16,6 @@
 #include "../../../math/mathUtils.h"
 #include "../collision/CollisionSystem.h"
 
-
 namespace
 {
   [[nodiscard]] bool keyPressedAny(const sf::Keyboard::Key a, const sf::Keyboard::Key b)
@@ -32,6 +31,20 @@ namespace
         return i;
     }
     return -1;
+  }
+
+  void ensureHitMarker(ecs::Registry& registry, const ecs::Entity playerEntity)
+  {
+    if (!registry.hasComponent<ecs::HitMarkerComponent>(playerEntity))
+    {
+      registry.addComponent<ecs::HitMarkerComponent>(playerEntity, ecs::HitMarkerComponent{HITMARKER_DURATION_SECONDS});
+      return;
+    }
+
+    if (auto* hm = registry.getComponent<ecs::HitMarkerComponent>(playerEntity))
+    {
+      hm->remainingSeconds = std::max(hm->remainingSeconds, HITMARKER_DURATION_SECONDS);
+    }
   }
 
   void applyDamageOrKill(ecs::Registry& registry, const ecs::Entity target, const float dmg)
@@ -449,6 +462,7 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
         if (hitEnemy != INVALID_ENTITY)
         {
           applyDamageOrKill(registry, hitEnemy, activeSlot.weapon->damage());
+          ensureHitMarker(registry, playerEntity);
         }
       }
     }

@@ -34,5 +34,7 @@ constexpr float    PARRY_HEAL_ON_ENEMY_PROJECTILE     = 30.f;
 constexpr float    PARRY_ANIM_FRAME_TIME_SECONDS      = 0.09f;
 constexpr float    PARRY_CROSSHAIR_FLASH_SECONDS      = 0.15f;
 
+constexpr float    HITMARKER_DURATION_SECONDS         = 0.12f;
+
 
 #endif //NULLP0INT_CONSTANTS_H

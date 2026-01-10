@@ -13,6 +13,22 @@
 
 namespace
 {
+  void ensureHitMarker(ecs::Registry& registry, const ecs::Entity playerEntity)
+  {
+    if (playerEntity == ecs::INVALID_ENTITY) return;
+
+    if (!registry.hasComponent<ecs::HitMarkerComponent>(playerEntity))
+    {
+      registry.addComponent<ecs::HitMarkerComponent>(playerEntity, ecs::HitMarkerComponent{HITMARKER_DURATION_SECONDS});
+      return;
+    }
+
+    if (auto* hm = registry.getComponent<ecs::HitMarkerComponent>(playerEntity))
+    {
+      hm->remainingSeconds = std::max(hm->remainingSeconds, HITMARKER_DURATION_SECONDS);
+    }
+  }
+
   [[nodiscard]] bool segmentCircleIntersection(
     const sf::Vector2f p0,
     const sf::Vector2f p1,
@@ -140,9 +156,6 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
     }
   }
 
-  const auto* playerPos = (player != INVALID_ENTITY) ? registry.getComponent<PositionComponent>(player) : nullptr;
-  const auto* playerRad = (player != INVALID_ENTITY) ? registry.getComponent<RadiusComponent>(player) : nullptr;
-
   for (const auto& e : ents)
   {
     if (!registry.hasComponent<ProjectileTag>(e)) continue;
@@ -197,14 +210,21 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
     }
     else
     {
-      if (player != INVALID_ENTITY && playerPos && playerRad)
+      for (const auto& maybePlayer : ents)
       {
-        const float rr = playerRad->radius + prj->radius;
-        if (float t = 2.f; segmentCircleIntersection(p0, p1, playerPos->position, rr, t))
+        if (!registry.hasComponent<PlayerTag>(maybePlayer)) continue;
+
+        const auto* pp = registry.getComponent<PositionComponent>(maybePlayer);
+        const auto* pr = registry.getComponent<RadiusComponent>(maybePlayer);
+        if (!pp || !pr) continue;
+
+        const float rr = pr->radius + prj->radius;
+        if (float t = 2.f; segmentCircleIntersection(p0, p1, pp->position, rr, t))
         {
           hitEntityT = t;
-          hitEntity = player;
+          hitEntity = maybePlayer;
         }
+        break;
       }
     }
 
@@ -216,9 +236,9 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
     {
       pos->position = lerp(p0, p1, std::clamp(hitEntityT, 0.f, 1.f));
 
-      if (!ownerIsPlayer && hitEntity == player)
+      if (!ownerIsPlayer && registry.hasComponent<PlayerTag>(hitEntity))
       {
-        if (const auto* invul = registry.getComponent<InvulnerabilityComponent>(player);
+        if (const auto* invul = registry.getComponent<InvulnerabilityComponent>(hitEntity);
           invul && invul->remainingSeconds > 0.f)
         {
           toDestroy.push_back(e);
@@ -226,8 +246,15 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
         }
       }
 
-      if (ownerIsPlayer) applyDamageOrKill(registry, hitEntity, prj->damage);
-      else applyDamageNoKill(registry, hitEntity, prj->damage);
+      if (ownerIsPlayer)
+      {
+        applyDamageOrKill(registry, hitEntity, prj->damage);
+        ensureHitMarker(registry, prj->owner);
+      }
+      else
+      {
+        applyDamageNoKill(registry, hitEntity, prj->damage);
+      }
 
       toDestroy.push_back(e);
       continue;
