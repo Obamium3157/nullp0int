@@ -221,6 +221,14 @@ void MapGenerationSystem::build()
 std::string MapGenerationSystem::print()
 {
   const std::string filename = "map_" + generateRandomString() + ".txt";
+  try
+  {
+    std::filesystem::create_directories("resources/maps/generated");
+  }
+  catch (...)
+  {
+  }
+
   std::ofstream file("resources/maps/generated/" + filename);
 
   for (int y = 0; y < m_height; ++y)

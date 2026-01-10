@@ -78,9 +78,11 @@ void Game::init_textures()
   m_textureManager.load("step2", "resources/assets/STEP2.png");
   m_textureManager.load("sinner", "resources/assets/WALL50_1.png");
   m_textureManager.load("nwall", "resources/assets/COMP02_5.png");
+  m_textureManager.load("ewall", "resources/assets/COMP1B_4.png");
   m_textureManager.load("1wall", "resources/assets/MFLR8_1.png");
   m_textureManager.load("2wall", "resources/assets/MFLR8_3.png");
   m_textureManager.load("placeholder", "resources/assets/FCANA0.png");
+  m_textureManager.load("exit_wall", "resources/assets/FLAT22.png");
 
   m_textureManager.load("pistol_idle", "resources/assets/PISGA0.png");
   m_textureManager.load("pistol_fire_0", "resources/assets/PISGB0.png");
@@ -145,6 +147,9 @@ void Game::init_textures()
     tm->tileAppearanceMap['n'] = {"nwall", {}};
     tm->tileAppearanceMap['1'] = {"1wall", {}};
     tm->tileAppearanceMap['2'] = {"2wall", {}};
+    tm->tileAppearanceMap['E'] = {"ewall", {}};
+    tm->tileAppearanceMap['e'] = {"ewall", {}};
+    tm->tileAppearanceMap['>'] = {"exit_wall", {}};
     tm->floorTextureId = "floor";
   }
 }
@@ -188,6 +193,14 @@ void Game::handleEvents()
       else if (m_state == GlobalState::MapSelect)
       {
         setState(GlobalState::MainMenu);
+      }
+    }
+
+    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::E)
+    {
+      if (m_state == GlobalState::Playing)
+      {
+        tryOpenExit();
       }
     }
 
@@ -267,7 +280,11 @@ void Game::render()
   m_window.clear(sf::Color::Black);
 
   const bool hasWorld =
-    (m_state == GlobalState::Playing || m_state == GlobalState::Paused || m_state == GlobalState::DeathMenu);
+    (m_state == GlobalState::Playing
+      || m_state == GlobalState::Paused
+      || m_state == GlobalState::UpgradeMenu
+      || m_state == GlobalState::WinMenu
+      || m_state == GlobalState::DeathMenu);
 
   if (hasWorld && m_tilemap != ecs::INVALID_ENTITY)
   {
@@ -292,6 +309,14 @@ void Game::render()
 
     case GlobalState::Paused:
       drawMenu("Пауза", buildButtonsForState(m_state), true);
+      break;
+
+    case GlobalState::UpgradeMenu:
+      drawMenu("Выберите улучшение", buildButtonsForState(m_state), true);
+      break;
+
+    case GlobalState::WinMenu:
+      drawMenu("Вы выиграли!", buildButtonsForState(m_state), true);
       break;
 
     case GlobalState::DeathMenu:

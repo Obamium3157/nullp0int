@@ -39,6 +39,8 @@ private:
     MapSelect,
     Playing,
     Paused,
+    UpgradeMenu,
+    WinMenu,
     DeathMenu,
   };
 
@@ -57,6 +59,10 @@ private:
   ecs::Entity m_player = ecs::INVALID_ENTITY;
   ecs::Entity m_tilemap = ecs::INVALID_ENTITY;
 
+  bool m_campaignActive = false;
+  int m_campaignLevelIndex = 0;
+  std::vector<std::string> m_campaignMapPaths;
+
   GlobalState m_state = GlobalState::MainMenu;
   float m_worldTimeSeconds = 0.f;
 
@@ -72,6 +78,10 @@ private:
 
   void startNewGame(MapChoice choice);
   void returnToMainMenu();
+
+  void generateProceduralCampaign(uint32_t seed);
+  void loadCampaignLevel(int index);
+  bool tryOpenExit();
 
   [[nodiscard]] std::vector<UIButton> buildButtonsForState(GlobalState state) const;
   void drawMenu(const std::string& title, const std::vector<UIButton>& buttons, bool darkenBackground);

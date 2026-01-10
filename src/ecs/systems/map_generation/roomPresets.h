@@ -19,11 +19,11 @@ const RoomPreset entrancePreset = {
 };
 
 const RoomPreset exitPreset = {
-  "nnnnnnnn",
-  "n      n",
-  "n  >   n",
-  "n      n",
-  "nnnnnnnn"
+  "eeeeeeee",
+  "e      e",
+  "e  >   e",
+  "e      e",
+  "eeeeeeee"
 };
 
 const std::vector<RoomPreset> normalPresets = {
