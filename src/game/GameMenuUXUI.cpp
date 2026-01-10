@@ -15,8 +15,8 @@
 namespace
 {
   constexpr int kCampaignLevels = 3;
-  constexpr int kFirstLevelSide = 100;
-  constexpr int kSideStep = 50;
+  constexpr int kFirstLevelSide = 50;
+  constexpr int kSideStep = 25;
 
   int campaignSideForLevel(const int idx)
   {
@@ -25,7 +25,7 @@ namespace
 
   int campaignRoomsForLevel(const int idx)
   {
-    return 50 + idx * 25;
+    return kFirstLevelSide + idx * kSideStep;
   }
 }
 
@@ -69,7 +69,7 @@ void Game::startNewGame(const MapChoice choice)
   m_tilemap = ecs::INVALID_ENTITY;
   m_worldTimeSeconds = 0.f;
 
-  init_tilemap(seed, choice);
+  init_tilemap(choice);
   init_textures();
   init_player();
   spawnEnemiesFromMap(m_registry, m_tilemap, m_config);

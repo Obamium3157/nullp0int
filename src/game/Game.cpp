@@ -57,17 +57,12 @@ void Game::init()
   setMouseCaptured(m_window, false);
 }
 
-void Game::init_tilemap(const uint32_t seed, const MapChoice choice)
+void Game::init_tilemap(const MapChoice choice)
 {
   if (choice == MapChoice::TestMap)
   {
     m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/showcase_map.txt");
-    return;
   }
-
-  MapGenerationSystem mgs{100, 100, seed};
-  const std::string filename = mgs.generateLevel(50);
-  m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/generated/" + filename);
 }
 
 void Game::init_textures()

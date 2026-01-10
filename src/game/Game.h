@@ -73,7 +73,7 @@ private:
 
   void init_textures();
   void init_player();
-  void init_tilemap(uint32_t seed, MapChoice choice);
+  void init_tilemap(MapChoice choice);
   void init();
 
   void startNewGame(MapChoice choice);
