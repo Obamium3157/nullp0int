@@ -31,7 +31,7 @@ sf::Color Hud::crosshairColorFromHealth(const float current, const float max)
   const float damage = clamp01(1.f - (current / safeMax));
 
   const auto gb = static_cast<sf::Uint8>(std::lround(255.f * (1.f - damage)));
-  return {255, gb, gb, 255};
+  return {255, gb, gb, 100};
 }
 
 void Hud::update(const float dtSeconds,
@@ -128,7 +128,13 @@ void Hud::drawCrosshair(sf::RenderWindow& window,
   const float thick = std::max(1.f, m_crosshair.thickness);
   const float gap = std::max(0.f, m_crosshair.gap);
 
-  const sf::Color color = crosshairColorFromHealth(hp->current, hp->max);
+  sf::Color color = crosshairColorFromHealth(hp->current, hp->max);
+
+  if (const auto* parry = registry.getComponent<ecs::ParryComponent>(player);
+    parry && parry->crosshairFlashRemainingSeconds > 0.f)
+  {
+    color = sf::Color(0, 255, 0, 255);
+  }
 
   const sf::Vector2f size(len, thick);
   const sf::Vector2f origin(size.x * 0.5f, size.y * 0.5f);

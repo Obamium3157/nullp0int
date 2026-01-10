@@ -163,6 +163,11 @@ namespace
       parry.cooldownRemainingSeconds = std::max(0.f, parry.cooldownRemainingSeconds - std::max(0.f, dt));
     }
 
+    if (parry.crosshairFlashRemainingSeconds > 0.f)
+    {
+      parry.crosshairFlashRemainingSeconds = std::max(0.f, parry.crosshairFlashRemainingSeconds - std::max(0.f, dt));
+    }
+
     if (!parry.parrying) return;
 
     constexpr float frameTime = std::max(0.f, PARRY_ANIM_FRAME_TIME_SECONDS);
@@ -194,7 +199,7 @@ namespace
   [[nodiscard]] sf::Vector2f normalizeSafe(const sf::Vector2f v)
   {
     const float len = length(v);
-    if (!std::isfinite(len) || len <= BIG_EPSILON) return {0.f, 0.f};
+    if (!std::isfinite(len) || len <= 1e-6f) return {0.f, 0.f};
     return {v.x / len, v.y / len};
   }
 
@@ -420,6 +425,7 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
     if (targetProjectile != INVALID_ENTITY)
     {
       applyParryToProjectile(registry, targetProjectile, playerEntity, lookDirNorm);
+      parry->crosshairFlashRemainingSeconds = std::max(parry->crosshairFlashRemainingSeconds, std::max(0.f, PARRY_CROSSHAIR_FLASH_SECONDS));
     }
   }
 

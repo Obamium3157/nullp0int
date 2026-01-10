@@ -268,6 +268,8 @@ namespace ecs
     bool parrying = false;
     std::size_t animFrame = 0;
     float animAccumulator = 0.f;
+
+    float crosshairFlashRemainingSeconds = 0.f;
   };
 
   struct PlayerWeaponInputState
