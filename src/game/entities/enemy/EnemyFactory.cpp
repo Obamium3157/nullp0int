@@ -67,7 +67,7 @@ ecs::Entity initEnemy(ecs::Registry& registry,
   ec.state = ecs::EnemyState::PASSIVE;
 
   ec.meleeAttackRangeTiles = 1.15f;
-  ec.meleeAttackDamage = 25.f;
+  ec.meleeAttackDamage = 10.f;
 
   ec.rangedPreferredRangeTiles = 10.f;
   ec.rangedRangeToleranceTiles = 2.f;

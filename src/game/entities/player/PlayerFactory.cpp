@@ -21,7 +21,7 @@ ecs::Entity initPlayer(ecs::Registry &registry, const sf::Vector2f initialPos, c
   registry.addComponent<ecs::RotationSpeedComponent>(player, ecs::RotationSpeedComponent{rotationSpeed});
   registry.addComponent<ecs::PlayerTag>(player, ecs::PlayerTag{});
   registry.addComponent<ecs::PlayerInput>(player, ecs::PlayerInput{});
-  registry.addComponent<ecs::HealthComponent>(player, ecs::HealthComponent{100.f, 100.f});
+  registry.addComponent<ecs::HealthComponent>(player, ecs::HealthComponent{200.f, 200.f});
 
 
   ecs::WeaponInventoryComponent inv;

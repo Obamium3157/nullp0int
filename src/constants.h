@@ -24,7 +24,7 @@ constexpr char     RANGE_ENEMY_SPAWN_MARKER           = '9';
 constexpr char     SUPPORT_ENEMY_SPAWN_MARKER         = '@';
 constexpr float    MOUSE_DEG_PER_PIXEL                = 0.12f;
 
-constexpr float    PARRY_RANGE_TILES                  = 1.5f;
+constexpr float    PARRY_RANGE_TILES                  = 2.5f;
 constexpr float    PARRY_FOV_DEGREES                  = 10.0f;
 constexpr float    PARRY_COOLDOWN_SECONDS             = 1.0f;
 constexpr float    PARRY_INVULNERABILITY_SECONDS      = 1.5f;
