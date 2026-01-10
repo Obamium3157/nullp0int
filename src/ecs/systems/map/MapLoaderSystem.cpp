@@ -13,7 +13,7 @@
 #include "../../../constants.h"
 #include "../../../configuration/Configuration.h"
 
-ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, Configuration config, const std::string &filename)
+ecs::Entity ecs::MapLoaderSystem::load(Registry &registry, const Configuration &config, const std::string &filename)
 {
   std::ifstream file(filename);
   if (!file.is_open())

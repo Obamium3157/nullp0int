@@ -17,7 +17,7 @@ namespace ecs
   class MapLoaderSystem
   {
   public:
-    static Entity load(Registry& registry, Configuration config, const std::string& filename);
+    static Entity load(Registry& registry, const Configuration &config, const std::string& filename);
   };
 
   sf::Vector2f getMapPosition(sf::Vector2f position);
