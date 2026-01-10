@@ -2,7 +2,7 @@
 // Created by obamium3157 on 27.12.2025.
 //
 
-#include "PathfindingSystem.h"
+#include "EnemyControllerSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -52,7 +52,7 @@ namespace
   }
 }
 
-void ecs::PathfindingSystem::update(Registry& registry, const Entity tilemapEntity, const float dt)
+void ecs::EnemyControllerSystem::update(Registry& registry, const Entity tilemapEntity, const float dt)
 {
   using namespace ecs::npc;
 

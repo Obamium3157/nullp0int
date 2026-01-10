@@ -8,7 +8,7 @@
 
 namespace ecs
 {
-  class PathfindingSystem
+  class EnemyControllerSystem
   {
   public:
     static void update(Registry& registry, Entity tilemapEntity, float dt);

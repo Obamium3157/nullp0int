@@ -17,7 +17,7 @@
 #include "../ecs/systems/input/InputSystem.h"
 #include "../ecs/systems/map/MapLoaderSystem.h"
 #include "../ecs/systems/map_generation/MapGenerationSystem.h"
-#include "../ecs/systems/npc/PathfindingSystem.h"
+#include "../ecs/systems/npc/EnemyControllerSystem.h"
 #include "../ecs/systems/physics/PhysicsSystem.h"
 #include "../ecs/systems/projectile/ProjectileSystem.h"
 #include "../ecs/systems/render/AnimationSystem.h"
@@ -61,7 +61,7 @@ void Game::init_tilemap(const uint32_t seed, const MapChoice choice)
 {
   if (choice == MapChoice::TestMap)
   {
-    m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/map2.txt");
+    m_tilemap = ecs::MapLoaderSystem::load(m_registry, m_config, "resources/maps/showcase_map.txt");
     return;
   }
 
@@ -242,7 +242,7 @@ void Game::update(const float dt)
     m_worldTimeSeconds += dtSafe;
 
     ecs::InputSystem::update(m_registry, m_config, dtSafe, mouseDx);
-    ecs::PathfindingSystem::update(m_registry, m_tilemap, dtSafe);
+    ecs::EnemyControllerSystem::update(m_registry, m_tilemap, dtSafe);
     ecs::AnimationSystem::update(m_registry, dtSafe);
     ecs::PhysicsSystem::update(m_registry, dtSafe, m_tilemap);
     ecs::RayCasting::rayCast(m_registry, m_config, m_player);

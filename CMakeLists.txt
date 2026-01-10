@@ -41,8 +41,8 @@ add_executable(nullp0int src/main.cpp
         src/ecs/systems/map_generation/roomPresets.h
         src/game/entities/enemy/EnemyFactory.h
         src/game/entities/enemy/EnemyFactory.cpp
-        src/ecs/systems/npc/PathfindingSystem.h
-        src/ecs/systems/npc/PathfindingSystem.cpp
+        src/ecs/systems/npc/EnemyControllerSystem.h
+        src/ecs/systems/npc/EnemyControllerSystem.cpp
         src/ecs/systems/weapon/WeaponSystem.h
         src/ecs/systems/weapon/WeaponSystem.cpp
         src/game/weapons/Weapon.h

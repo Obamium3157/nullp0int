@@ -12,8 +12,6 @@
 
 #include "Game.h"
 
-constexpr auto UI_FONT_PATH = "resources/fonts/tektur/Tektur-Black.ttf";
-
 [[nodiscard]] bool loadUiFont(sf::Font& font)
 {
   try

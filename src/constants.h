@@ -23,6 +23,7 @@ constexpr char     MELEE_ENEMY_SPAWN_MARKER           = '&';
 constexpr char     RANGE_ENEMY_SPAWN_MARKER           = '9';
 constexpr char     SUPPORT_ENEMY_SPAWN_MARKER         = '@';
 constexpr float    MOUSE_DEG_PER_PIXEL                = 0.12f;
+constexpr auto     UI_FONT_PATH                       = "resources/fonts/tektur/Tektur-Black.ttf";
 
 constexpr float    PARRY_RANGE_TILES                  = 2.5f;
 constexpr float    PARRY_FOV_DEGREES                  = 10.0f;
