@@ -2,10 +2,12 @@
 // Created by obamium3157 on 27.12.2025.
 //
 
+#include <algorithm>
 #include <random>
 
 #include "Game.h"
 #include "GameUI.h"
+#include "../ecs/Components.h"
 #include "entities/enemy/EnemyFactory.h"
 
 void Game::setState(const GlobalState next)
@@ -170,7 +172,14 @@ void Game::drawWeaponView()
 
   std::string texId;
 
-  if (slot.firing)
+  if (const auto* parry = m_registry.getComponent<ecs::ParryComponent>(m_player);
+    parry && parry->parrying)
+  {
+    static const std::string kFrames[3] = {"parry1", "parry2", "parry3"};
+    const std::size_t idx = std::min<std::size_t>(parry->animFrame, 2u);
+    texId = kFrames[idx];
+  }
+  if (texId.empty() && slot.firing)
   {
     if (const auto& fireFrames = slot.weapon->viewFireFrames(); !fireFrames.empty())
     {

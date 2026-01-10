@@ -216,6 +216,16 @@ void ecs::ProjectileSystem::update(Registry& registry, const Configuration& conf
     {
       pos->position = lerp(p0, p1, std::clamp(hitEntityT, 0.f, 1.f));
 
+      if (!ownerIsPlayer && hitEntity == player)
+      {
+        if (const auto* invul = registry.getComponent<InvulnerabilityComponent>(player);
+          invul && invul->remainingSeconds > 0.f)
+        {
+          toDestroy.push_back(e);
+          continue;
+        }
+      }
+
       if (ownerIsPlayer) applyDamageOrKill(registry, hitEntity, prj->damage);
       else applyDamageNoKill(registry, hitEntity, prj->damage);
 

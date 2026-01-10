@@ -25,6 +25,7 @@ namespace ecs::npc
   }
 
   static void applyDamage(
+    Registry& registry,
     const EnemyComponent& enemy,
     HealthComponent& playerHealth,
     const PerceptionResult& perception,
@@ -32,6 +33,15 @@ namespace ecs::npc
     const float rangedAttackRangeWorld
   )
   {
+    if (const Entity player = findPlayer(registry); player != INVALID_ENTITY)
+    {
+      if (const auto* invul = registry.getComponent<InvulnerabilityComponent>(player);
+        invul && invul->remainingSeconds > 0.f)
+      {
+        return;
+      }
+    }
+
     switch (enemy.cls)
     {
       case EnemyClass::MELEE:
@@ -275,7 +285,7 @@ namespace ecs::npc
           const std::size_t applyFrame = enemy.attackApplyFrame;
           if ((!sprite.playing) || (sprite.currentFrame >= applyFrame))
           {
-            applyDamage(enemy, playerHealth, perception, meleeRangeWorld, rangedAttackRangeWorld);
+            applyDamage(registry, enemy, playerHealth, perception, meleeRangeWorld, rangedAttackRangeWorld);
             enemy.attackDamageApplied = true;
           }
         }

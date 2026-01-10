@@ -92,10 +92,15 @@ void Game::init_textures()
   m_textureManager.load("shotgun_fire_0", "resources/assets/SHTGA0.png");
   m_textureManager.load("shotgun_fire_1", "resources/assets/SHTGB0.png");
   m_textureManager.load("shotgun_fire_2", "resources/assets/SHTGC0.png");
-  m_textureManager.load("shotgun_fire_3", "resources/assets/SHTGA0.png");
+  m_textureManager.load("shotgun_fire_3", "resources/assets/SHTGD0.png");
 
   m_textureManager.load("shotgun_projectile", "resources/assets/BAL1A0.png");
   m_textureManager.load("support_projectile", "resources/assets/IFOGA0.png");
+
+  m_textureManager.load("parry1", "resources/assets/PUNGB0.png");
+  m_textureManager.load("parry2", "resources/assets/PUNGC0.png");
+  m_textureManager.load("parry3", "resources/assets/PUNGD0.png");
+  m_textureManager.load("parried_projectile", "resources/assets/APBXA0.png");
 
   m_textureManager.load("melee_walk_1", "resources/assets/BOSSA1.png");
   m_textureManager.load("melee_walk_2", "resources/assets/BOSSC1.png");

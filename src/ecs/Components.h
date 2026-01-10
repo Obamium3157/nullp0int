@@ -253,6 +253,21 @@ namespace ecs
     float visualSizeTiles = 0.25f;
 
     float ignoreOwnerSeconds = 0.04f;
+
+    bool parried = false;
+  };
+
+  struct InvulnerabilityComponent
+  {
+    float remainingSeconds = 0.f;
+  };
+
+  struct ParryComponent
+  {
+    float cooldownRemainingSeconds = 0.f;
+    bool parrying = false;
+    std::size_t animFrame = 0;
+    float animAccumulator = 0.f;
   };
 
   struct PlayerWeaponInputState
@@ -260,6 +275,7 @@ namespace ecs
     bool prevFire = false;
     bool prevNum2 = false;
     bool prevNum3 = false;
+    bool prevParry = false;
   };
 
   struct WeaponSlotRuntime

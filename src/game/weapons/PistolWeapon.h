@@ -27,7 +27,7 @@ namespace game::weapons
 
   private:
     std::vector<std::string> m_idle = {"pistol_idle"};
-    std::vector<std::string> m_fire = {"pistol_fire_0", "pistol_fire_1", "pistol_fire_2", "pistol_fire_3"};
+    std::vector<std::string> m_fire = {"pistol_fire_0", "pistol_fire_1", "pistol_fire_2", "pistol_fire_3", "pistol_fire_2", "pistol_fire_1", "pistol_fire_0"};
   };
 }
 

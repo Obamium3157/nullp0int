@@ -20,7 +20,7 @@ namespace game::weapons
 
     [[nodiscard]] float damage() const override { return 50.f; }
 
-    [[nodiscard]] float fireFrameTimeSeconds() const override { return 0.09f; }
+    [[nodiscard]] float fireFrameTimeSeconds() const override { return 0.1f; }
     [[nodiscard]] const std::vector<std::string>& viewIdleFrames() const override { return m_idle; }
     [[nodiscard]] const std::vector<std::string>& viewFireFrames() const override { return m_fire; }
 

@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
 
@@ -47,10 +49,10 @@ namespace
   }
 
   ecs::Entity hitscanPickEnemy(
-    ecs::Registry &    registry,
+    ecs::Registry& registry,
     const sf::Vector2f playerPos,
     const sf::Vector2f dir,
-    const float        maxDist
+    const float maxDist
   )
   {
     ecs::Entity best = ecs::INVALID_ENTITY;
@@ -142,6 +144,137 @@ namespace
     }
   }
 
+  void updateInvulnerability(ecs::Registry& registry, const ecs::Entity player, const float dt)
+  {
+    if (auto* inv = registry.getComponent<ecs::InvulnerabilityComponent>(player))
+    {
+      inv->remainingSeconds = std::max(0.f, inv->remainingSeconds - std::max(0.f, dt));
+      if (inv->remainingSeconds <= 0.f)
+      {
+        registry.removeComponent<ecs::InvulnerabilityComponent>(player);
+      }
+    }
+  }
+
+  void updateParryAnimation(ecs::ParryComponent& parry, const float dt)
+  {
+    if (parry.cooldownRemainingSeconds > 0.f)
+    {
+      parry.cooldownRemainingSeconds = std::max(0.f, parry.cooldownRemainingSeconds - std::max(0.f, dt));
+    }
+
+    if (!parry.parrying) return;
+
+    constexpr float frameTime = std::max(0.f, PARRY_ANIM_FRAME_TIME_SECONDS);
+
+    parry.animAccumulator += dt;
+    while (parry.animAccumulator >= frameTime)
+    {
+      parry.animAccumulator -= frameTime;
+
+      if (parry.animFrame + 1u < 3u)
+      {
+        parry.animFrame++;
+      }
+      else
+      {
+        parry.parrying = false;
+        parry.animFrame = 0;
+        parry.animAccumulator = 0.f;
+        break;
+      }
+    }
+  }
+
+  [[nodiscard]] float length(const sf::Vector2f v)
+  {
+    return std::hypot(v.x, v.y);
+  }
+
+  [[nodiscard]] sf::Vector2f normalizeSafe(const sf::Vector2f v)
+  {
+    const float len = length(v);
+    if (!std::isfinite(len) || len <= BIG_EPSILON) return {0.f, 0.f};
+    return {v.x / len, v.y / len};
+  }
+
+  [[nodiscard]] float angleBetweenRadians(const sf::Vector2f aNorm, const sf::Vector2f bNorm)
+  {
+    const float dot = std::clamp(aNorm.x * bNorm.x + aNorm.y * bNorm.y, -1.f, 1.f);
+    return std::acos(dot);
+  }
+
+  ecs::Entity pickParryProjectile(
+    ecs::Registry& registry,
+    const sf::Vector2f playerPos,
+    const sf::Vector2f lookDirNorm,
+    const float rangeWorld,
+    const float fovRad
+  )
+  {
+    ecs::Entity best = ecs::INVALID_ENTITY;
+    float bestDist = std::numeric_limits<float>::infinity();
+
+    for (const auto& e : registry.entities())
+    {
+      if (!registry.hasComponent<ecs::ProjectileTag>(e)) continue;
+
+      const auto* pp = registry.getComponent<ecs::PositionComponent>(e);
+      const auto* prj = registry.getComponent<ecs::ProjectileComponent>(e);
+      if (!pp || !prj) continue;
+
+      const sf::Vector2f to{ pp->position.x - playerPos.x, pp->position.y - playerPos.y };
+      const float dist = length(to);
+      if (!std::isfinite(dist) || dist > rangeWorld) continue;
+
+      const sf::Vector2f toDir = normalizeSafe(to);
+      if (toDir.x == 0.f && toDir.y == 0.f) continue;
+
+      if (angleBetweenRadians(lookDirNorm, toDir) > fovRad) continue;
+
+      if (dist < bestDist)
+      {
+        bestDist = dist;
+        best = e;
+      }
+    }
+
+    return best;
+  }
+
+  void applyParryToProjectile(
+    ecs::Registry& registry,
+    const ecs::Entity projectile,
+    const ecs::Entity playerEntity,
+    const sf::Vector2f lookDirNorm
+  )
+  {
+    auto* prj = registry.getComponent<ecs::ProjectileComponent>(projectile);
+    if (!prj) return;
+
+    const bool wasEnemy = (prj->owner != ecs::INVALID_ENTITY) && registry.hasComponent<ecs::EnemyTag>(prj->owner);
+
+    prj->owner = playerEntity;
+    prj->damage = PARRY_PROJECTILE_DAMAGE;
+
+    if (!prj->parried)
+    {
+      prj->speed *= PARRY_PROJECTILE_SPEED_MULTIPLIER;
+    }
+
+    prj->direction = lookDirNorm;
+    prj->textureId = "parried_projectile";
+    prj->parried = true;
+
+    if (wasEnemy)
+    {
+      if (auto* hp = registry.getComponent<ecs::HealthComponent>(playerEntity))
+      {
+        hp->current = std::min(hp->max, hp->current + PARRY_HEAL_ON_ENEMY_PROJECTILE);
+      }
+    }
+  }
+
   ecs::Entity spawnProjectileFromWeapon(
     ecs::Registry& registry,
     const Configuration& config,
@@ -188,6 +321,7 @@ namespace
     pc.heightShift = weapon.projectileHeightShift();
     pc.visualSizeTiles = weapon.projectileVisualSizeTiles();
     pc.ignoreOwnerSeconds = 0.04f;
+    pc.parried = false;
 
     registry.addComponent<ecs::ProjectileComponent>(proj, pc);
     return proj;
@@ -210,6 +344,16 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
     if (!inputState) return;
   }
 
+  auto* parry = registry.getComponent<ParryComponent>(playerEntity);
+  if (!parry)
+  {
+    registry.addComponent<ParryComponent>(playerEntity, ParryComponent{});
+    parry = registry.getComponent<ParryComponent>(playerEntity);
+    if (!parry) return;
+  }
+
+  updateInvulnerability(registry, playerEntity, dtSeconds);
+  updateParryAnimation(*parry, dtSeconds);
   updateWeaponTimers(*inv, dtSeconds);
 
   const bool num2Now = keyPressedAny(sf::Keyboard::Num2, sf::Keyboard::Numpad2);
@@ -234,17 +378,56 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
 
   if (!activeSlot.weapon) return;
 
-  const bool fireNow = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-
   const auto* pos = registry.getComponent<PositionComponent>(playerEntity);
   const auto* rot = registry.getComponent<RotationComponent>(playerEntity);
   const auto* rad = registry.getComponent<RadiusComponent>(playerEntity);
   if (!pos || !rot) return;
 
-  if (fireNow && activeSlot.cooldownRemaining <= 0.f)
+  const float angRad = radiansFromDegrees(rot->angle);
+  const sf::Vector2f lookDirNorm{ std::cos(angRad), std::sin(angRad) };
+
+  const bool parryNow = sf::Keyboard::isKeyPressed(sf::Keyboard::F);
+  const bool fireNow = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+
+  const bool canStartParry =
+    parryNow &&
+    !inputState->prevParry &&
+    !parry->parrying &&
+    parry->cooldownRemainingSeconds <= 0.f &&
+    !activeSlot.firing &&
+    activeSlot.cooldownRemaining <= 0.f;
+
+  if (canStartParry)
   {
-    const float ang = radiansFromDegrees(rot->angle);
-    const sf::Vector2f dir{ std::cos(ang), std::sin(ang) };
+    parry->parrying = true;
+    parry->animFrame = 0;
+    parry->animAccumulator = 0.f;
+    parry->cooldownRemainingSeconds = std::max(0.f, PARRY_COOLDOWN_SECONDS);
+
+    if (!registry.hasComponent<InvulnerabilityComponent>(playerEntity))
+    {
+      registry.addComponent<InvulnerabilityComponent>(playerEntity, InvulnerabilityComponent{PARRY_INVULNERABILITY_SECONDS});
+    }
+    else if (auto* invul = registry.getComponent<InvulnerabilityComponent>(playerEntity))
+    {
+      invul->remainingSeconds = std::max(invul->remainingSeconds, PARRY_INVULNERABILITY_SECONDS);
+    }
+
+    const float rangeWorld = std::max(0.f, PARRY_RANGE_TILES) * config.tile_size;
+    const float fovRad = radiansFromDegrees(std::max(0.f, PARRY_FOV_DEGREES));
+
+    const Entity targetProjectile = pickParryProjectile(registry, pos->position, lookDirNorm, rangeWorld, fovRad);
+    if (targetProjectile != INVALID_ENTITY)
+    {
+      applyParryToProjectile(registry, targetProjectile, playerEntity, lookDirNorm);
+    }
+  }
+
+  inputState->prevParry = parryNow;
+
+  if (!parry->parrying && fireNow && activeSlot.cooldownRemaining <= 0.f)
+  {
+    const sf::Vector2f aimDir = lookDirNorm;
 
     if (activeSlot.weapon->attackType() == game::weapons::AttackType::HITSCAN)
     {
@@ -256,8 +439,7 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
 
       if (maxDist > 1.f)
       {
-        const Entity hitEnemy = hitscanPickEnemy(registry, pos->position, dir, maxDist
-        );
+        const Entity hitEnemy = hitscanPickEnemy(registry, pos->position, aimDir, maxDist);
         if (hitEnemy != INVALID_ENTITY)
         {
           applyDamageOrKill(registry, hitEnemy, activeSlot.weapon->damage());
@@ -267,7 +449,7 @@ void ecs::WeaponSystem::update(Registry& registry, const Configuration& config, 
     else
     {
       const float ownerRadius = rad ? rad->radius : config.player_radius;
-      (void)spawnProjectileFromWeapon(registry, config, tilemapEntity, playerEntity, pos->position, ownerRadius, dir, *activeSlot.weapon);
+      (void)spawnProjectileFromWeapon(registry, config, tilemapEntity, playerEntity, pos->position, ownerRadius, aimDir, *activeSlot.weapon);
     }
 
     startFireAnimation(activeSlot);
